@@ -1,36 +1,218 @@
-'use client'
-
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import { createAuthenticatedClient } from '@/lib/supabase/server'
 import { logoutAction } from '@/app/actions/auth'
-import type { OnboardingAnswers } from '@/app/actions/onboarding'
+import { QuickAddSection } from './quick-add'
 
-const QUESTION_LABELS: Record<keyof OnboardingAnswers, string> = {
-  name: 'Name',
-  friendsDescription: 'How friends describe you',
-  strongestBeliefs: 'Strongest beliefs',
-  lifeShapingLessons: 'Life-shaping lessons',
-  adviceGiven: 'Advice you often give',
-  biggestGoals: 'Biggest goals',
-  rememberFor: 'What you want to be remembered for',
-  tone: 'Tone of your FutureSelf',
-  avoidTopics: 'Topics to avoid',
-  helpUnderstand: 'What people should understand about you',
+export const dynamic = 'force-dynamic'
+
+export const metadata = {
+  title: 'Dashboard — FutureSelf',
 }
 
-export default function DashboardPage() {
-  const [onboarding, setOnboarding] = useState<Partial<OnboardingAnswers> | null>(null)
+type MemoryRow = {
+  id: string
+  memory_type: string
+  content: string
+  importance: number
+  created_at: string
+}
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem('futureself_onboarding')
-      if (raw) setOnboarding(JSON.parse(raw))
-    } catch {
-      // ignore
-    }
-  }, [])
+type SectionDef = {
+  id: string
+  title: string
+  types: string[]
+  emptyText: string
+  emptyHint: string
+  dotFill: string
+  badgeBg: string
+  badgeBorder: string
+  badgeText: string
+}
 
-  const name = onboarding?.name ?? 'there'
+const SECTIONS: SectionDef[] = [
+  {
+    id: 'goal',
+    title: 'Current Goals',
+    types: ['goal'],
+    emptyText: 'No goals tracked yet.',
+    emptyHint: "Tell your FutureSelf what you're working toward.",
+    dotFill: 'bg-violet-400',
+    badgeBg: 'bg-violet-500/10',
+    badgeBorder: 'border-violet-500/25',
+    badgeText: 'text-violet-300',
+  },
+  {
+    id: 'project',
+    title: 'Active Projects',
+    types: ['project'],
+    emptyText: 'No projects tracked yet.',
+    emptyHint: "Add a project you're currently building or working on.",
+    dotFill: 'bg-blue-400',
+    badgeBg: 'bg-blue-500/10',
+    badgeBorder: 'border-blue-500/25',
+    badgeText: 'text-blue-300',
+  },
+  {
+    id: 'challenge',
+    title: 'Current Challenges',
+    types: ['challenge'],
+    emptyText: 'No challenges tracked yet.',
+    emptyHint: 'Sharing your challenges helps your FutureSelf offer better guidance.',
+    dotFill: 'bg-amber-400',
+    badgeBg: 'bg-amber-500/10',
+    badgeBorder: 'border-amber-500/25',
+    badgeText: 'text-amber-300',
+  },
+  {
+    id: 'win',
+    title: 'Recent Wins',
+    types: ['win'],
+    emptyText: 'No wins recorded yet.',
+    emptyHint: 'Celebrate your wins — big and small.',
+    dotFill: 'bg-emerald-400',
+    badgeBg: 'bg-emerald-500/10',
+    badgeBorder: 'border-emerald-500/25',
+    badgeText: 'text-emerald-300',
+  },
+  {
+    id: 'relationship',
+    title: 'Key Relationships',
+    types: ['relationship'],
+    emptyText: 'No relationships tracked yet.',
+    emptyHint: 'Tell your FutureSelf about the important people in your life.',
+    dotFill: 'bg-pink-400',
+    badgeBg: 'bg-pink-500/10',
+    badgeBorder: 'border-pink-500/25',
+    badgeText: 'text-pink-300',
+  },
+  {
+    id: 'focus',
+    title: 'Focus Areas',
+    types: ['preference', 'belief', 'lesson', 'decision', 'personal_fact', 'communication_style'],
+    emptyText: 'No focus areas yet.',
+    emptyHint: 'Beliefs, lessons, and preferences your FutureSelf should know.',
+    dotFill: 'bg-sky-400',
+    badgeBg: 'bg-sky-500/10',
+    badgeBorder: 'border-sky-500/25',
+    badgeText: 'text-sky-300',
+  },
+]
+
+function ImportanceDots({ score, fill }: { score: number; fill: string }) {
+  return (
+    <span className="flex items-center gap-0.5">
+      {Array.from({ length: 5 }, (_, i) => (
+        <span
+          key={i}
+          className={`w-1.5 h-1.5 rounded-full ${i < score ? fill : 'bg-white/[0.1]'}`}
+        />
+      ))}
+    </span>
+  )
+}
+
+function MemoryCard({ item, dotFill }: { item: MemoryRow; dotFill: string }) {
+  const date = new Date(item.created_at).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  })
+  return (
+    <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-4 flex flex-col gap-3">
+      <p className="text-sm text-white/75 leading-relaxed flex-1">{item.content}</p>
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-white/20">{date}</span>
+        <ImportanceDots score={item.importance} fill={dotFill} />
+      </div>
+    </div>
+  )
+}
+
+function Section({ def, items }: { def: SectionDef; items: MemoryRow[] }) {
+  return (
+    <div className="rounded-2xl border border-white/[0.07] bg-white/[0.025] p-6">
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-2.5">
+          <span className={`w-2 h-2 rounded-full ${def.dotFill}`} />
+          <h2 className="text-sm font-semibold text-white/85">{def.title}</h2>
+          {items.length > 0 && (
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full border ${def.badgeBg} ${def.badgeBorder} ${def.badgeText}`}
+            >
+              {items.length}
+            </span>
+          )}
+        </div>
+        {items.length > 0 && (
+          <Link
+            href="/memories"
+            className="text-xs text-white/25 hover:text-white/55 transition-colors"
+          >
+            View all
+          </Link>
+        )}
+      </div>
+
+      {items.length === 0 ? (
+        <div className="py-5 text-center">
+          <p className="text-sm text-white/30 mb-1">{def.emptyText}</p>
+          <p className="text-xs text-white/20">{def.emptyHint}</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {items.map((item) => (
+            <MemoryCard key={item.id} item={item} dotFill={def.dotFill} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default async function DashboardPage() {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    return (
+      <div className="min-h-screen bg-[#06060f] text-white flex items-center justify-center">
+        <p className="text-white/40">Supabase not configured.</p>
+      </div>
+    )
+  }
+
+  const supabase = await createAuthenticatedClient()
+  if (!supabase) redirect('/login')
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+  if (userError || !user) redirect('/login')
+
+  const { data: memories } = await supabase
+    .from('futureself_memories')
+    .select('id, memory_type, content, importance, created_at')
+    .eq('user_id', user.id)
+    .order('importance', { ascending: false })
+    .order('created_at', { ascending: false })
+    .returns<MemoryRow[]>()
+
+  const all = memories ?? []
+
+  const grouped = Object.fromEntries(
+    SECTIONS.map((s) => [s.id, all.filter((m) => s.types.includes(m.memory_type))])
+  )
+
+  const counts = {
+    goals:      grouped['goal']?.length ?? 0,
+    projects:   grouped['project']?.length ?? 0,
+    challenges: grouped['challenge']?.length ?? 0,
+    wins:       grouped['win']?.length ?? 0,
+  }
+
+  const trackingParts: string[] = []
+  if (counts.goals > 0)      trackingParts.push(`${counts.goals} ${counts.goals === 1 ? 'goal' : 'goals'}`)
+  if (counts.projects > 0)   trackingParts.push(`${counts.projects} ${counts.projects === 1 ? 'project' : 'projects'}`)
+  if (counts.challenges > 0) trackingParts.push(`${counts.challenges} ${counts.challenges === 1 ? 'challenge' : 'challenges'}`)
+  if (counts.wins > 0)       trackingParts.push(`${counts.wins} ${counts.wins === 1 ? 'win' : 'wins'}`)
 
   return (
     <div className="min-h-screen bg-[#06060f] text-white">
@@ -42,126 +224,102 @@ export default function DashboardPage() {
         >
           FutureSelf
         </Link>
-        <form action={logoutAction}>
-          <button
-            type="submit"
-            className="text-sm text-white/40 hover:text-white/70 transition-colors"
-          >
-            Sign out
-          </button>
-        </form>
-      </nav>
-
-      <main className="max-w-3xl mx-auto px-6 py-16 md:px-8">
-        {/* Header */}
-        <div className="mb-12">
-          <div className="inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-4 py-1.5 text-sm text-violet-300 mb-6">
-            <span className="h-1.5 w-1.5 rounded-full bg-violet-400" />
-            Phase 3 complete
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] p-0.5">
+            <Link
+              href="/chat"
+              className="rounded-full px-3 py-1 text-xs font-medium text-white/40 hover:text-white/70 transition-colors"
+            >
+              Chat
+            </Link>
+            <Link
+              href="/conversation"
+              className="rounded-full px-3 py-1 text-xs font-medium text-white/40 hover:text-white/70 transition-colors"
+            >
+              Conversation
+            </Link>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
-            Welcome, {name}.
-          </h1>
-          <p className="text-white/45 text-lg mb-6">
-            Your FutureSelf is taking shape. AI chat is coming in Phase 4.
-          </p>
           <Link
             href="/me"
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-600 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 hover:shadow-violet-500/35 hover:scale-[1.03] transition-all duration-200"
+            className="text-sm text-white/40 hover:text-white/70 transition-colors hidden sm:block"
           >
-            View my FutureSelf
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="5" y1="12" x2="19" y2="12" />
-              <polyline points="12 5 19 12 12 19" />
-            </svg>
+            Profile
           </Link>
+          <form action={logoutAction}>
+            <button
+              type="submit"
+              className="text-sm text-white/40 hover:text-white/70 transition-colors hidden sm:block"
+            >
+              Sign out
+            </button>
+          </form>
+        </div>
+      </nav>
+
+      <main className="max-w-3xl mx-auto px-6 py-12 md:px-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-3.5 py-1 text-xs font-medium text-violet-300 mb-4">
+            <span className="h-1.5 w-1.5 rounded-full bg-violet-400 animate-pulse" />
+            Life Dashboard
+          </div>
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight bg-gradient-to-br from-white to-white/60 bg-clip-text text-transparent mb-2">
+            Your Life, At a Glance
+          </h1>
+          <p className="text-white/40 text-sm">
+            Everything your FutureSelf is tracking about you.
+          </p>
         </div>
 
-        {/* Coming soon card */}
-        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-8 mb-10 relative overflow-hidden">
-          <div
-            className="absolute inset-0 -z-10 bg-gradient-to-br from-violet-900/20 to-fuchsia-900/10 rounded-2xl"
-            aria-hidden
-          />
-          <div className="flex items-start gap-4">
-            <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-violet-500/15 flex items-center justify-center text-violet-400">
+        {/* Tracking summary */}
+        {trackingParts.length > 0 ? (
+          <div className="rounded-2xl border border-white/[0.07] bg-gradient-to-br from-violet-900/20 to-fuchsia-900/10 p-5 mb-6 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-violet-500/15 flex items-center justify-center flex-shrink-0">
               <svg
-                width="20"
-                height="20"
+                width="15"
+                height="15"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                strokeWidth="1.5"
+                strokeWidth="1.75"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                className="text-violet-400"
               >
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                <path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0 0h18" />
               </svg>
             </div>
-            <div>
-              <h2 className="text-base font-semibold text-white mb-1">
-                AI Chat — coming in Phase 3
-              </h2>
-              <p className="text-sm text-white/40 leading-relaxed">
-                Your onboarding answers have been recorded. Next we'll train your
-                FutureSelf on them and let you (and others) chat with it.
-              </p>
-            </div>
+            <p className="text-sm text-white/65">
+              Your FutureSelf is currently tracking{' '}
+              <span className="text-white/88 font-medium">{trackingParts.join(', ')}.</span>
+            </p>
           </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-white/[0.08] p-5 mb-6 text-center">
+            <p className="text-sm text-white/30 mb-1">Nothing tracked yet.</p>
+            <p className="text-xs text-white/20">
+              Use Quick Add below or start chatting — memories are extracted automatically.
+            </p>
+          </div>
+        )}
+
+        {/* Quick add */}
+        <QuickAddSection />
+
+        {/* Memory sections */}
+        <div className="space-y-4">
+          {SECTIONS.map((s) => (
+            <Section key={s.id} def={s} items={grouped[s.id] ?? []} />
+          ))}
         </div>
 
-        {/* Onboarding answers recap */}
-        {onboarding && (
-          <div>
-            <h2 className="text-lg font-semibold text-white mb-5">
-              Your FutureSelf foundation
-            </h2>
-            <div className="space-y-4">
-              {(Object.keys(QUESTION_LABELS) as (keyof OnboardingAnswers)[]).map(
-                (key) => {
-                  const answer = onboarding[key]
-                  if (!answer) return null
-                  return (
-                    <div
-                      key={key}
-                      className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-5 py-4"
-                    >
-                      <p className="text-xs font-medium text-white/35 uppercase tracking-wider mb-1.5">
-                        {QUESTION_LABELS[key]}
-                      </p>
-                      <p className="text-sm text-white/70 leading-relaxed">
-                        {answer}
-                      </p>
-                    </div>
-                  )
-                }
-              )}
-            </div>
-
-            <div className="mt-8 flex gap-3">
-              <Link
-                href="/onboarding"
-                className="inline-flex items-center gap-2 rounded-full border border-white/15 px-5 py-2.5 text-sm font-medium text-white/60 hover:bg-white/10 hover:text-white transition-all duration-200"
-              >
-                Edit answers
-              </Link>
-            </div>
-          </div>
-        )}
-
-        {!onboarding && (
-          <div className="text-center py-10">
-            <p className="text-white/35 text-sm mb-4">
-              No onboarding answers found.
-            </p>
-            <Link
-              href="/onboarding"
-              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-600 px-6 py-2.5 text-sm font-semibold text-white hover:scale-[1.03] transition-transform"
-            >
-              Start onboarding
-            </Link>
-          </div>
-        )}
+        {/* Footer hint */}
+        <p className="text-center text-xs text-white/20 mt-10">
+          Memories are auto-extracted from every chat.{' '}
+          <Link href="/memories" className="underline underline-offset-2 hover:text-white/40 transition-colors">
+            Manage all memories
+          </Link>
+        </p>
       </main>
     </div>
   )

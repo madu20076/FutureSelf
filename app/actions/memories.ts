@@ -46,6 +46,7 @@ export async function saveMemoryAction(input: {
   if (error) return { success: false, error: error.message }
   revalidatePath('/memories')
   revalidatePath('/me')
+  revalidatePath('/dashboard')
   return { success: true }
 }
 
@@ -83,5 +84,6 @@ export async function deleteMemoryAction(memoryId: string): Promise<Result> {
   if (error) return { success: false, error: error.message }
   revalidatePath('/memories')
   revalidatePath('/me')
+  revalidatePath('/dashboard')
   return { success: true }
 }

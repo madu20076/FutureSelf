@@ -274,6 +274,12 @@ export function ChatInterface({
             </Link>
           </div>
           <Link
+            href="/dashboard"
+            className="text-sm text-white/40 hover:text-white/70 transition-colors hidden sm:block"
+          >
+            Dashboard
+          </Link>
+          <Link
             href="/me"
             className="text-sm text-white/40 hover:text-white/70 transition-colors hidden sm:block"
           >
