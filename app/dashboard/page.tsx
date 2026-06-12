@@ -5,8 +5,10 @@ import { logoutAction } from '@/app/actions/auth'
 import { QuickAddSection } from './quick-add'
 import { FocusCard } from './focus-card'
 import { CoachingWidget } from './coaching-widget'
+import { CommunicationWidget } from './communication-widget'
 import type { FocusRow } from '@/app/actions/focus'
 import type { CoachingReport } from '@/lib/futureself/coaching'
+import type { CommunicationProfile } from '@/lib/futureself/communication'
 
 export const dynamic = 'force-dynamic'
 
@@ -205,12 +207,19 @@ export default async function DashboardPage() {
   const weekStart   = getISOWeekStart()
 
   type CoachingReportRow = { report_json: CoachingReport; created_at: string }
+  type CommProfileRow   = {
+    communication_style: string | null; decision_style: string | null
+    motivation_style: string | null;    leadership_style: string | null
+    planning_style: string | null;      risk_tolerance: string | null
+    summary: string | null;             updated_at: string
+  }
 
   const [
     { data: memories },
     { data: focusItems },
     { data: reflectionCheck },
     { data: coachingRow },
+    { data: commRow },
   ] = await Promise.all([
     supabase
       .from('futureself_memories')
@@ -241,9 +250,25 @@ export default async function DashboardPage() {
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle<CoachingReportRow>(),
+    supabase
+      .from('futureself_communication_profile')
+      .select('communication_style, decision_style, motivation_style, leadership_style, planning_style, risk_tolerance, summary, updated_at')
+      .eq('user_id', user.id)
+      .maybeSingle<CommProfileRow>(),
   ])
 
   const latestCoachingReport: CoachingReport | null = coachingRow?.report_json ?? null
+
+  const latestCommProfile: CommunicationProfile | null = commRow ? {
+    communicationStyle: commRow.communication_style ?? '',
+    decisionStyle:      commRow.decision_style      ?? '',
+    motivationStyle:    commRow.motivation_style    ?? '',
+    leadershipStyle:    commRow.leadership_style    ?? '',
+    planningStyle:      commRow.planning_style      ?? '',
+    riskTolerance:      commRow.risk_tolerance      ?? '',
+    summary:            commRow.summary             ?? '',
+    updatedAt:          commRow.updated_at,
+  } : null
 
   const all = memories ?? []
   const reflectionDoneThisWeek = (reflectionCheck?.length ?? 0) > 0
@@ -419,6 +444,9 @@ export default async function DashboardPage() {
 
         {/* AI Coaching widget */}
         <CoachingWidget report={latestCoachingReport} />
+
+        {/* Communication Style widget */}
+        <CommunicationWidget profile={latestCommProfile} />
 
         {/* Quick add */}
         <QuickAddSection />

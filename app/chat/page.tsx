@@ -53,9 +53,14 @@ export default async function ChatPage() {
   }
 
   type CloneSampleRow = { clone_voice_id: string | null }
+  type CommProfileRow = {
+    communication_style: string | null; decision_style: string | null
+    motivation_style: string | null;    leadership_style: string | null
+    planning_style: string | null;      risk_tolerance: string | null
+    summary: string | null;             updated_at: string
+  }
 
-  // Load memories + voice clone status in parallel
-  const [memoriesResult, cloneSampleResult] = await Promise.all([
+  const [memoriesResult, cloneSampleResult, commProfileResult] = await Promise.all([
     supabase
       .from('futureself_memories')
       .select('memory_type, content, importance')
@@ -72,11 +77,29 @@ export default async function ChatPage() {
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle<CloneSampleRow>(),
+    supabase
+      .from('futureself_communication_profile')
+      .select('communication_style, decision_style, motivation_style, leadership_style, planning_style, risk_tolerance, summary, updated_at')
+      .eq('user_id', user.id)
+      .maybeSingle<CommProfileRow>(),
   ])
 
   const memories: MemoryRecord[] = memoriesResult.data ?? []
   const cloneVoiceId = cloneSampleResult.data?.clone_voice_id ?? null
-  const systemPrompt = buildSystemPrompt(profile, row.onboarding, memories)
+
+  const commRow = commProfileResult.data
+  const communicationProfile = commRow ? {
+    communicationStyle: commRow.communication_style ?? '',
+    decisionStyle:      commRow.decision_style      ?? '',
+    motivationStyle:    commRow.motivation_style    ?? '',
+    leadershipStyle:    commRow.leadership_style    ?? '',
+    planningStyle:      commRow.planning_style      ?? '',
+    riskTolerance:      commRow.risk_tolerance      ?? '',
+    summary:            commRow.summary             ?? '',
+    updatedAt:          commRow.updated_at,
+  } : null
+
+  const systemPrompt = buildSystemPrompt(profile, row.onboarding, memories, communicationProfile)
 
   return (
     <ChatInterface

@@ -1,5 +1,6 @@
 import type { GeneratedProfile } from './generate'
 import type { OnboardingAnswers } from '@/app/actions/onboarding'
+import type { CommunicationProfile } from './communication'
 
 export type MemoryRecord = {
   memory_type: string
@@ -10,7 +11,8 @@ export type MemoryRecord = {
 export function buildSystemPrompt(
   profile: GeneratedProfile,
   answers: OnboardingAnswers,
-  memories?: MemoryRecord[]
+  memories?: MemoryRecord[],
+  communicationProfile?: CommunicationProfile | null
 ): string {
   const name = profile.display_name
   const style = profile.response_style ?? 'Balanced'
@@ -66,6 +68,18 @@ export function buildSystemPrompt(
       'Facts learned from past conversations. Use these as additional context when relevant — do not recite them unprompted.'
     )
     memories.forEach((m) => sections.push(`- ${m.content}`))
+    sections.push('')
+  }
+
+  if (communicationProfile) {
+    sections.push('## How They Communicate')
+    sections.push(`Communication: ${communicationProfile.communicationStyle}`)
+    sections.push(`Decisions: ${communicationProfile.decisionStyle}`)
+    sections.push(`Motivation: ${communicationProfile.motivationStyle}`)
+    sections.push(`Leadership: ${communicationProfile.leadershipStyle}`)
+    sections.push(`Planning: ${communicationProfile.planningStyle}`)
+    sections.push(`Risk tolerance: ${communicationProfile.riskTolerance}`)
+    sections.push(`\nAdapt your responses to match this communication style. Mirror their directness, energy level, and preferred level of detail.`)
     sections.push('')
   }
 

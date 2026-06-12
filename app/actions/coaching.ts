@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { generateCoachingReport, type CoachingReport, type CoachingInput } from '@/lib/futureself/coaching'
+import { generateCommunicationAction } from './communication'
 
 type Result<T> = { success: true; data: T } | { success: false; error: string }
 
@@ -90,6 +91,13 @@ export async function generateCoachingAction(): Promise<Result<CoachingReport>> 
 
   revalidatePath('/coaching')
   revalidatePath('/dashboard')
+
+  // Regenerate communication profile after coaching — non-fatal
+  try {
+    await generateCommunicationAction()
+  } catch (err) {
+    console.error('[coaching] communication regen failed:', err)
+  }
 
   return { success: true, data: report }
 }
