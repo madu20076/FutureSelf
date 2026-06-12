@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation'
 import { createAuthenticatedClient } from '@/lib/supabase/server'
 import { logoutAction } from '@/app/actions/auth'
 import { QuickAddSection } from './quick-add'
+import { FocusCard } from './focus-card'
+import type { FocusRow } from '@/app/actions/focus'
 
 export const dynamic = 'force-dynamic'
 
@@ -187,13 +189,24 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser()
   if (userError || !user) redirect('/login')
 
-  const { data: memories } = await supabase
-    .from('futureself_memories')
-    .select('id, memory_type, content, importance, created_at')
-    .eq('user_id', user.id)
-    .order('importance', { ascending: false })
-    .order('created_at', { ascending: false })
-    .returns<MemoryRow[]>()
+  const today = new Date().toISOString().slice(0, 10)
+
+  const [{ data: memories }, { data: focusItems }] = await Promise.all([
+    supabase
+      .from('futureself_memories')
+      .select('id, memory_type, content, importance, created_at')
+      .eq('user_id', user.id)
+      .order('importance', { ascending: false })
+      .order('created_at', { ascending: false })
+      .returns<MemoryRow[]>(),
+    supabase
+      .from('futureself_focus')
+      .select('id, focus_text, completed, focus_date, created_at')
+      .eq('user_id', user.id)
+      .eq('focus_date', today)
+      .order('created_at', { ascending: true })
+      .returns<FocusRow[]>(),
+  ])
 
   const all = memories ?? []
 
@@ -302,6 +315,9 @@ export default async function DashboardPage() {
             </p>
           </div>
         )}
+
+        {/* Today's Focus */}
+        <FocusCard initialItems={focusItems ?? []} />
 
         {/* Quick add */}
         <QuickAddSection />
