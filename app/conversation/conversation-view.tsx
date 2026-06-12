@@ -220,8 +220,8 @@ export function ConversationView({
 
     try {
       await audio.play()
-    } catch (err) {
-      fail(`Playback failed: ${err instanceof Error ? err.message : 'unknown'}`)
+    } catch {
+      fail('Audio playback failed. Please try again.')
     }
   }
 
@@ -311,7 +311,7 @@ export function ConversationView({
       </nav>
 
       {/* ── Portrait ── */}
-      <div className="flex-shrink-0 relative" style={{ height: 'min(42vh, 360px)' }}>
+      <div className="flex-shrink-0 relative" style={{ height: 'min(50vh, 440px)' }}>
         {portraitUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -341,24 +341,34 @@ export function ConversationView({
       <div className="flex-1 flex flex-col items-center justify-between px-6 py-5 overflow-y-auto">
         <div className="flex flex-col items-center gap-6 w-full max-w-sm">
 
-          {/* Phase label */}
-          <div className="h-8 flex items-center justify-center">
-            {isError ? (
-              <span className="text-sm text-red-400/80 text-center leading-snug px-2">
+          {/* Status indicator */}
+          <div className="h-10 flex items-center justify-center">
+            {isProcessing ? (
+              <span className="flex items-center gap-2 text-sm text-white/50">
+                <span className="flex items-center gap-0.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white/40 animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-white/40 animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-white/40 animate-bounce" style={{ animationDelay: '300ms' }} />
+                </span>
+                {PHASE_LABEL[phase]}
+              </span>
+            ) : isError ? (
+              <span className="text-sm text-red-400/80 text-center leading-snug px-4 max-w-[280px]">
                 {errorMsg}
               </span>
-            ) : isProcessing ? (
-              <span className="flex items-center gap-2 text-sm text-white/40">
-                <span className="w-3.5 h-3.5 rounded-full border border-white/25 border-t-white/60 animate-spin" />
-                {PHASE_LABEL[phase]}
-              </span>
             ) : (
-              <span className={`text-sm font-medium transition-colors ${
-                isListening ? 'text-red-400' : isSpeaking ? 'text-violet-400' : 'text-white/45'
+              <span className={`flex items-center gap-2 text-sm font-medium transition-all duration-300 ${
+                isListening ? 'text-red-400' : isSpeaking ? 'text-violet-300' : 'text-white/40'
               }`}>
+                <span className={`w-2 h-2 rounded-full flex-shrink-0 transition-colors duration-300 ${
+                  isListening ? 'bg-red-400 animate-pulse' :
+                  isSpeaking  ? 'bg-violet-400 animate-pulse' :
+                  'bg-white/20'
+                }`} />
                 {PHASE_LABEL[phase]}
-                {isListening && <span className="ml-2 text-white/30 font-normal text-xs">Tap to stop</span>}
-                {isSpeaking  && <span className="ml-2 text-white/30 font-normal text-xs">Tap to stop</span>}
+                {(isListening || isSpeaking) && (
+                  <span className="text-white/30 font-normal text-xs">· Tap to stop</span>
+                )}
               </span>
             )}
           </div>
@@ -367,10 +377,10 @@ export function ConversationView({
           {isError ? (
             <button
               onClick={() => { setErrorMsg(null); setPhase('idle') }}
-              className="w-20 h-20 rounded-full bg-white/[0.08] border border-white/15 flex items-center justify-center text-white/50 hover:bg-white/[0.12] hover:text-white/80 transition-all active:scale-95"
-              aria-label="Dismiss error"
+              className="w-24 h-24 rounded-full bg-red-500/[0.08] border border-red-500/20 flex items-center justify-center text-red-400/60 hover:bg-red-500/[0.15] hover:text-red-400 transition-all active:scale-95"
+              aria-label="Try again"
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="1 4 1 10 7 10" />
                 <path d="M3.51 15a9 9 0 1 0 .49-3.51" />
               </svg>
@@ -380,42 +390,49 @@ export function ConversationView({
               onClick={handleButtonTap}
               disabled={buttonDisabled}
               aria-label={PHASE_LABEL[phase]}
-              className={`relative w-20 h-20 rounded-full flex items-center justify-center transition-all active:scale-95 disabled:cursor-not-allowed ${
+              className={`relative w-24 h-24 rounded-full flex items-center justify-center transition-all duration-200 active:scale-95 disabled:cursor-not-allowed ${
                 isListening
                   ? 'bg-red-600/20 border-2 border-red-500/60 text-red-400'
                   : isSpeaking
-                  ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/30'
+                  ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-xl shadow-violet-500/35'
                   : isProcessing
                   ? 'bg-white/[0.05] border border-white/10 text-white/20'
-                  : 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-lg shadow-violet-500/30 hover:scale-105 hover:shadow-violet-500/50'
+                  : 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-xl shadow-violet-500/35 hover:scale-105 hover:shadow-violet-500/55'
               }`}
             >
               {/* Pulsing rings — listening */}
               {isListening && (
                 <>
-                  <span className="absolute inset-0 rounded-full border-2 border-red-500/50 animate-ping" />
-                  <span className="absolute -inset-3 rounded-full border border-red-500/20 animate-ping" style={{ animationDelay: '400ms' }} />
+                  <span className="absolute inset-0 rounded-full border-2 border-red-500/60 animate-ping" />
+                  <span className="absolute -inset-3 rounded-full border border-red-500/30 animate-ping" style={{ animationDelay: '350ms' }} />
+                  <span className="absolute -inset-6 rounded-full border border-red-500/15 animate-ping" style={{ animationDelay: '700ms' }} />
                 </>
               )}
               {/* Pulsing rings — speaking */}
               {isSpeaking && (
                 <>
-                  <span className="absolute inset-0 rounded-full border-2 border-violet-400/50 animate-ping" />
-                  <span className="absolute -inset-3 rounded-full border border-fuchsia-400/20 animate-ping" style={{ animationDelay: '400ms' }} />
+                  <span className="absolute inset-0 rounded-full border-2 border-violet-400/60 animate-ping" />
+                  <span className="absolute -inset-3 rounded-full border border-fuchsia-400/30 animate-ping" style={{ animationDelay: '350ms' }} />
+                  <span className="absolute -inset-6 rounded-full border border-violet-400/15 animate-ping" style={{ animationDelay: '700ms' }} />
                 </>
               )}
 
               {/* Icon */}
               {isProcessing ? (
-                <span className="w-5 h-5 rounded-full border-2 border-white/20 border-t-white/50 animate-spin" />
-              ) : isListening ? (
-                <StopSquareIcon />
-              ) : isSpeaking ? (
+                <span className="w-6 h-6 rounded-full border-2 border-white/20 border-t-white/60 animate-spin" />
+              ) : isListening || isSpeaking ? (
                 <StopSquareIcon />
               ) : (
                 <MicIcon />
               )}
             </button>
+          )}
+
+          {/* Empty state */}
+          {!lastExchange && !isError && phase === 'idle' && (
+            <p className="text-center text-sm text-white/25 leading-relaxed max-w-[240px]">
+              Tap the microphone and start a conversation with your FutureSelf.
+            </p>
           )}
 
           {/* Transcript section */}
@@ -473,8 +490,8 @@ export function ConversationView({
 function MicIcon() {
   return (
     <svg
-      width="26"
-      height="26"
+      width="30"
+      height="30"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -492,7 +509,7 @@ function MicIcon() {
 
 function StopSquareIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
       <rect x="4" y="4" width="16" height="16" rx="3" />
     </svg>
   )

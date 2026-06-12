@@ -1,6 +1,11 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback, FormEvent, KeyboardEvent } from 'react'
+import Link from 'next/link'
+import { logoutAction } from '@/app/actions/auth'
+import type { GeneratedProfile } from '@/lib/futureself/generate'
+import type { OnboardingAnswers } from '@/app/actions/onboarding'
+import { PushToTalk } from './push-to-talk'
 
 function safeParseJson(text: string): Record<string, unknown> {
   try {
@@ -9,11 +14,6 @@ function safeParseJson(text: string): Record<string, unknown> {
     return {}
   }
 }
-import Link from 'next/link'
-import { logoutAction } from '@/app/actions/auth'
-import type { GeneratedProfile } from '@/lib/futureself/generate'
-import type { OnboardingAnswers } from '@/app/actions/onboarding'
-import { PushToTalk } from './push-to-talk'
 
 type Message = {
   role: 'user' | 'assistant'
@@ -542,18 +542,16 @@ function Bubble({
     audioRef.current = audio
     audio.onended = () => setIsPlaying(false)
     audio.onerror = () => {
-      console.error('[Voice] audio load failed:', audioState.url)
-      setPlayError('Audio failed to load — check Supabase bucket.')
+      setPlayError('Voice audio failed to load.')
       setIsPlaying(false)
     }
 
     // Auto-play when flagged — fires once when this URL first arrives
     if (audioState.autoPlay) {
       setIsPlaying(true)
-      audio.play().catch((err: Error) => {
-        console.error('[Voice] auto-play failed:', err.message)
+      audio.play().catch(() => {
         setIsPlaying(false)
-        setPlayError(`Playback failed: ${err.message}`)
+        setPlayError('Voice playback failed.')
       })
     }
 
@@ -579,10 +577,9 @@ function Bubble({
       setIsPlaying(false)
     } else {
       setIsPlaying(true)
-      audio.play().catch((err: Error) => {
-        console.error('[Voice] play() failed:', err.message)
+      audio.play().catch(() => {
         setIsPlaying(false)
-        setPlayError(`Playback failed: ${err.message}`)
+        setPlayError('Voice playback failed.')
       })
     }
   }

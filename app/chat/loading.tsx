@@ -5,12 +5,15 @@ export default function ChatLoading() {
       <nav className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
         <div className="flex items-center gap-3">
           <div className="h-5 w-24 rounded-full bg-white/10" />
-          <div className="h-3 w-px bg-white/10 hidden sm:block" />
-          <div className="h-4 w-40 rounded-full bg-white/10 hidden sm:block" />
+          <div className="hidden sm:flex items-center gap-2 ml-1">
+            <div className="h-3 w-px bg-white/10" />
+            <div className="h-4 w-40 rounded-full bg-white/10" />
+          </div>
         </div>
-        <div className="flex gap-4">
-          <div className="h-4 w-12 rounded-full bg-white/10" />
-          <div className="h-4 w-14 rounded-full bg-white/10" />
+        <div className="flex items-center gap-4">
+          <div className="h-7 w-36 rounded-full bg-white/10" />
+          <div className="h-4 w-12 rounded-full bg-white/10 hidden sm:block" />
+          <div className="h-4 w-14 rounded-full bg-white/10 hidden sm:block" />
         </div>
       </nav>
 

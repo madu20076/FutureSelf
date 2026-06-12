@@ -5,7 +5,8 @@ export default function MeLoading() {
       <nav className="flex items-center justify-between px-6 py-4 md:px-16 border-b border-white/[0.06]">
         <div className="h-5 w-28 rounded-full bg-white/10" />
         <div className="flex gap-4">
-          <div className="h-4 w-16 rounded-full bg-white/10" />
+          <div className="h-4 w-10 rounded-full bg-white/10" />
+          <div className="h-4 w-16 rounded-full bg-white/10 hidden sm:block" />
           <div className="h-4 w-14 rounded-full bg-white/10" />
         </div>
       </nav>
@@ -52,16 +53,20 @@ export default function MeLoading() {
           <div className="h-3 w-5/6 rounded-full bg-white/5" />
         </div>
 
-        {/* Status */}
-        <div className="rounded-2xl border border-white/[0.07] bg-white/[0.025] p-6">
-          <div className="h-3 w-28 rounded-full bg-white/10 mb-4" />
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex-shrink-0" />
-            <div className="flex-1 space-y-2">
-              <div className="h-3 w-32 rounded-full bg-white/10" />
-              <div className="h-3 w-48 rounded-full bg-white/5" />
-            </div>
+        {/* Quick actions */}
+        <div className="rounded-2xl border border-white/[0.07] bg-white/[0.025] p-6 mb-8">
+          <div className="h-3 w-36 rounded-full bg-white/10 mb-4" />
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1 h-16 rounded-xl bg-white/[0.03] border border-white/[0.07]" />
+            <div className="flex-1 h-16 rounded-xl bg-white/[0.03] border border-white/[0.07]" />
           </div>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex flex-wrap gap-3">
+          <div className="h-10 w-44 rounded-full bg-white/10" />
+          <div className="h-10 w-32 rounded-full bg-white/[0.06]" />
+          <div className="h-10 w-36 rounded-full bg-white/[0.06]" />
         </div>
       </main>
     </div>

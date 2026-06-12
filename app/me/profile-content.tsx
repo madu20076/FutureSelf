@@ -78,8 +78,14 @@ export function ProfileContent({
         </Link>
         <div className="flex items-center gap-5">
           <Link
-            href="/dashboard"
+            href="/chat"
             className="text-sm text-white/40 hover:text-white/70 transition-colors"
+          >
+            Chat
+          </Link>
+          <Link
+            href="/dashboard"
+            className="text-sm text-white/40 hover:text-white/70 transition-colors hidden sm:block"
           >
             Dashboard
           </Link>
@@ -105,9 +111,9 @@ export function ProfileContent({
           />
 
           {/* Status badge */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-3.5 py-1 text-xs font-medium text-violet-300 mb-5">
-            <span className="h-1.5 w-1.5 rounded-full bg-violet-400 animate-pulse" />
-            Foundation Built
+          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1 text-xs font-medium text-emerald-300 mb-5">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Active
           </div>
 
           {/* Name */}
@@ -181,44 +187,67 @@ export function ProfileContent({
           />
         </div>
 
-        {/* ── FutureSelf Status ── */}
+        {/* ── Talk to Your FutureSelf ── */}
         <div className="rounded-2xl border border-white/[0.07] bg-white/[0.025] p-6 mb-8">
           <p className="text-xs font-semibold uppercase tracking-widest text-white/35 mb-4">
-            FutureSelf Status
+            Talk to Your FutureSelf
           </p>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="flex items-center gap-3 flex-1">
-              <div className="w-10 h-10 rounded-xl bg-violet-500/15 flex items-center justify-center flex-shrink-0">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Link
+              href="/chat"
+              className="flex-1 flex items-center gap-3 rounded-xl border border-white/[0.07] bg-white/[0.03] px-4 py-3.5 hover:bg-violet-600/10 hover:border-violet-500/20 transition-all group"
+            >
+              <div className="w-8 h-8 rounded-lg bg-violet-500/15 flex items-center justify-center flex-shrink-0">
                 <svg
-                  width="18"
-                  height="18"
+                  width="15"
+                  height="15"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
-                  strokeWidth="1.5"
+                  strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   className="text-violet-400"
                 >
-                  <path d="M12 2a10 10 0 1 0 10 10" />
-                  <path d="M12 6v6l4 2" />
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                 </svg>
               </div>
               <div>
-                <p className="text-sm font-semibold text-white">
-                  Foundation built
+                <p className="text-sm font-medium text-white/75 group-hover:text-white transition-colors">
+                  Text Chat
                 </p>
-                <p className="text-xs text-white/35">
-                  Your identity layer is ready. AI activation coming in Phase 4.
+                <p className="text-xs text-white/30">Type or speak your message</p>
+              </div>
+            </Link>
+            <Link
+              href="/conversation"
+              className="flex-1 flex items-center gap-3 rounded-xl border border-white/[0.07] bg-white/[0.03] px-4 py-3.5 hover:bg-fuchsia-600/10 hover:border-fuchsia-500/20 transition-all group"
+            >
+              <div className="w-8 h-8 rounded-lg bg-fuchsia-500/15 flex items-center justify-center flex-shrink-0">
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-fuchsia-400"
+                >
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                  <line x1="12" y1="19" x2="12" y2="23" />
+                  <line x1="8" y1="23" x2="16" y2="23" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white/75 group-hover:text-white transition-colors">
+                  Voice Conversation
                 </p>
+                <p className="text-xs text-white/30">Hands-free, voice-first mode</p>
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-1.5 w-24 rounded-full bg-white/10 overflow-hidden">
-                <div className="h-full w-1/3 bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full" />
-              </div>
-              <span className="text-xs text-white/30">Phase 3 / 4</span>
-            </div>
+            </Link>
           </div>
         </div>
 
