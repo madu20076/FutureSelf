@@ -21,15 +21,19 @@ type RecorderPhase =
 
 type Props = {
   onUploaded?: (audioUrl: string) => void
+  initialVoiceSample?: { audioUrl: string; duration: number | null } | null
 }
 
-export function VoiceRecorder({ onUploaded }: Props) {
-  const [phase, setPhase] = useState<RecorderPhase>('idle')
+export function VoiceRecorder({ onUploaded, initialVoiceSample }: Props) {
+  // When a persisted sample exists, start in 'done' state so the saved UI shows.
+  // Use useState initializers directly (not setAudioUrlTracked) so prevUrlRef stays
+  // null — Supabase public URLs must not be passed to URL.revokeObjectURL.
+  const [phase, setPhase] = useState<RecorderPhase>(initialVoiceSample ? 'done' : 'idle')
   const [hasConsent, setHasConsent] = useState(false)
-  const [audioUrl, setAudioUrl] = useState<string | null>(null)
-  const [duration, setDuration] = useState<number | null>(null)
+  const [audioUrl, setAudioUrl] = useState<string | null>(initialVoiceSample?.audioUrl ?? null)
+  const [duration, setDuration] = useState<number | null>(initialVoiceSample?.duration ?? null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
-  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null)
+  const [uploadedUrl, setUploadedUrl] = useState<string | null>(initialVoiceSample?.audioUrl ?? null)
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -292,6 +296,17 @@ export function VoiceRecorder({ onUploaded }: Props) {
             </p>
           </div>
 
+          {/* Audio preview — shows on initial upload and after login with a persisted sample */}
+          {audioUrl && (
+            <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] px-4 py-3 mb-4">
+              <span className="text-xs text-white/35 block mb-2">
+                {duration !== null ? `${duration}s` : 'Saved sample'}
+              </span>
+              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+              <audio src={audioUrl} controls className="w-full h-8" style={{ colorScheme: 'dark' }} />
+            </div>
+          )}
+
           <div className="flex flex-wrap gap-2">
             <button
               onClick={retake}
@@ -313,7 +328,7 @@ export function VoiceRecorder({ onUploaded }: Props) {
                 <polyline points="17 8 12 3 7 8" />
                 <line x1="12" y1="3" x2="12" y2="15" />
               </svg>
-              Upload Different File
+              Replace Voice Sample
             </button>
           </div>
         </div>

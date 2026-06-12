@@ -21,6 +21,7 @@ type Props = {
   hasReferencePhoto?: boolean
   voiceEnabled?: boolean
   voiceStyle?: VoiceStyle
+  initialVoiceSample?: { audioUrl: string; duration: number | null } | null
 }
 
 function InfoCard({
@@ -62,6 +63,7 @@ export function ProfileContent({
   hasReferencePhoto,
   voiceEnabled,
   voiceStyle,
+  initialVoiceSample,
 }: Props) {
   return (
     <div className="min-h-screen bg-[#06060f] text-white">
@@ -228,6 +230,7 @@ export function ProfileContent({
           <VoiceSettings
             initialEnabled={voiceEnabled ?? false}
             initialStyle={voiceStyle ?? 'calm'}
+            initialVoiceSample={initialVoiceSample ?? null}
           />
         )}
 

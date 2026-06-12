@@ -57,14 +57,27 @@ export default async function MePage() {
     response_style: (row.response_style as GeneratedProfile['response_style']) ?? 'Balanced',
   }
 
-  const [portraits, refPhotosResult] = await Promise.all([
+  type VoiceSampleRow = { audio_url: string; duration_seconds: number | null }
+
+  const [portraits, refPhotosResult, voiceSampleResult] = await Promise.all([
     getPortraits(user.id, supabase),
     supabase.storage
       .from('future-portraits')
       .list(`${user.id}/input`, { limit: 1 }),
+    supabase
+      .from('voice_samples')
+      .select('audio_url, duration_seconds')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle<VoiceSampleRow>(),
   ])
 
   const hasReferencePhoto = (refPhotosResult.data?.length ?? 0) > 0
+
+  const initialVoiceSample = voiceSampleResult.data
+    ? { audioUrl: voiceSampleResult.data.audio_url, duration: voiceSampleResult.data.duration_seconds }
+    : null
 
   return (
     <ProfileContent
@@ -77,6 +90,7 @@ export default async function MePage() {
       hasReferencePhoto={hasReferencePhoto}
       voiceEnabled={row.voice_enabled ?? false}
       voiceStyle={(row.voice_style as import('@/lib/futureself/voice').VoiceStyle | null) ?? 'calm'}
+      initialVoiceSample={initialVoiceSample}
     />
   )
 }

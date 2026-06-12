@@ -41,5 +41,6 @@ export async function saveVoiceSettingsAction(input: VoiceSettingsInput): Promis
   if (error) return { saved: false, error: error.message }
 
   revalidatePath('/me')
+  revalidatePath('/chat')
   return { saved: true }
 }

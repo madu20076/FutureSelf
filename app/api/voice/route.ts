@@ -46,10 +46,11 @@ export async function POST(request: Request) {
       { userId: user.id, messageId, audioBytes: bytes, textUsed: truncated },
       supabase
     )
+    console.log('[/api/voice] ok — audioUrl:', audioUrl)
     return Response.json({ audioUrl })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Voice generation failed.'
-    console.error('[/api/voice]', message)
+    console.error('[/api/voice] error:', message)
     return Response.json({ error: message }, { status: 500 })
   }
 }

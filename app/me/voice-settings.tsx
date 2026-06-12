@@ -16,9 +16,10 @@ const STYLE_HINTS: Record<VoiceStyle, string> = {
 type Props = {
   initialEnabled: boolean
   initialStyle: VoiceStyle
+  initialVoiceSample?: { audioUrl: string; duration: number | null } | null
 }
 
-export function VoiceSettings({ initialEnabled, initialStyle }: Props) {
+export function VoiceSettings({ initialEnabled, initialStyle, initialVoiceSample }: Props) {
   const [enabled, setEnabled] = useState(initialEnabled)
   const [style, setStyle] = useState<VoiceStyle>(initialStyle)
   const [isPending, startTransition] = useTransition()
@@ -110,7 +111,7 @@ export function VoiceSettings({ initialEnabled, initialStyle }: Props) {
         {isPending ? 'Saving…' : 'Save Voice Settings'}
       </button>
 
-      <VoiceRecorder />
+      <VoiceRecorder initialVoiceSample={initialVoiceSample ?? null} />
     </div>
   )
 }

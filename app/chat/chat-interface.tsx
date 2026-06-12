@@ -86,16 +86,20 @@ export function ChatInterface({
           body: JSON.stringify({ text, voiceStyle }),
         })
         const resText = await res.text()
+        console.log('[Voice] /api/voice', res.status, resText.slice(0, 300))
         const data = safeParseJson(resText) as { audioUrl?: string; error?: string }
         if (data.audioUrl) {
+          console.log('[Voice] audioUrl:', data.audioUrl)
           setAudioMap((prev) => ({ ...prev, [idx]: { url: data.audioUrl, loading: false } }))
         } else {
+          console.error('[Voice] generation failed:', data.error)
           setAudioMap((prev) => ({
             ...prev,
             [idx]: { loading: false, error: data.error ?? 'Audio generation failed.' },
           }))
         }
-      } catch {
+      } catch (err) {
+        console.error('[Voice] fetch error:', err)
         setAudioMap((prev) => ({
           ...prev,
           [idx]: { loading: false, error: 'Audio generation failed.' },
@@ -244,6 +248,14 @@ export function ChatInterface({
                   </button>
                 ))}
               </div>
+              {!voiceEnabled && (
+                <p className="mt-6 text-xs text-white/20">
+                  <Link href="/me" className="underline underline-offset-2 hover:text-white/40 transition-colors">
+                    Enable voice
+                  </Link>
+                  {' '}in your profile to hear FutureSelf speak.
+                </p>
+              )}
             </div>
           )}
 
@@ -353,16 +365,24 @@ function Bubble({
 }) {
   const isUser = msg.role === 'user'
   const [isPlaying, setIsPlaying] = useState(false)
+  const [playError, setPlayError] = useState<string | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   useEffect(() => {
     if (!audioState?.url) return
+    setPlayError(null)
     const audio = new Audio(audioState.url)
     audio.onended = () => setIsPlaying(false)
+    audio.onerror = () => {
+      console.error('[Voice] audio load failed:', audioState.url)
+      setPlayError('Audio failed to load — check Supabase bucket.')
+      setIsPlaying(false)
+    }
     audioRef.current = audio
     return () => {
       audio.pause()
       audio.onended = null
+      audio.onerror = null
       if (audioRef.current === audio) audioRef.current = null
     }
   }, [audioState?.url])
@@ -379,8 +399,12 @@ function Bubble({
       audio.currentTime = 0
       setIsPlaying(false)
     } else {
-      void audio.play()
       setIsPlaying(true)
+      audio.play().catch((err: Error) => {
+        console.error('[Voice] play() failed:', err.message)
+        setIsPlaying(false)
+        setPlayError(`Playback failed: ${err.message}`)
+      })
     }
   }
 
@@ -424,15 +448,18 @@ function Bubble({
                 <span className="w-3 h-3 rounded-full border border-white/25 border-t-white/60 animate-spin" />
                 Generating voice…
               </span>
-            ) : audioState?.error ? (
-              <button
-                onClick={handleSpeakerClick}
-                className="flex items-center gap-1.5 text-xs py-1.5 px-2 -mx-2 rounded-md text-red-400/60 hover:text-red-400 transition-colors"
-                title="Retry"
-              >
-                <PlayIcon />
-                Retry
-              </button>
+            ) : audioState?.error || playError ? (
+              <div className="flex items-center gap-2 py-1.5">
+                <span className="text-xs text-red-400/70">
+                  {audioState?.error ?? playError}
+                </span>
+                <button
+                  onClick={() => { setPlayError(null); handleSpeakerClick() }}
+                  className="text-xs text-red-400/50 hover:text-red-400 underline underline-offset-2 transition-colors flex-shrink-0"
+                >
+                  Retry
+                </button>
+              </div>
             ) : (
               <button
                 onClick={handleSpeakerClick}
