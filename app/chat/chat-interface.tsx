@@ -27,6 +27,8 @@ type AudioState = {
   autoPlay?: boolean
 }
 
+type ResponseMode = 'text-voice' | 'voice-only' | 'text-only'
+
 type Props = {
   profile: GeneratedProfile
   answers: OnboardingAnswers
@@ -43,6 +45,18 @@ const SUGGESTIONS = () => [
 ]
 
 const LS_AUTOPLAY_KEY = 'futureself_autoplay_voice'
+const LS_RESPONSE_MODE_KEY = 'futureself_response_mode'
+
+const RESPONSE_MODES: ResponseMode[] = ['text-voice', 'voice-only', 'text-only']
+const MODE_LABELS: Record<ResponseMode, string> = {
+  'text-voice': 'Text + Voice',
+  'voice-only': 'Voice Only',
+  'text-only': 'Text Only',
+}
+
+function isValidMode(v: unknown): v is ResponseMode {
+  return v === 'text-voice' || v === 'voice-only' || v === 'text-only'
+}
 
 export function ChatInterface({
   profile,
@@ -63,13 +77,16 @@ export function ChatInterface({
   const audioMapRef = useRef<Record<number, AudioState>>({})
 
   const [autoPlayEnabled, setAutoPlayEnabled] = useState(false)
-  // Hydrate from localStorage after mount (avoids SSR mismatch)
-  useEffect(() => {
-    setAutoPlayEnabled(localStorage.getItem(LS_AUTOPLAY_KEY) === 'true')
-  }, [])
-
+  const [responseMode, setResponseMode] = useState<ResponseMode>('text-voice')
   // True when the current input text came from a voice transcript
   const [fromVoice, setFromVoice] = useState(false)
+
+  // Hydrate preferences from localStorage after mount (avoids SSR mismatch)
+  useEffect(() => {
+    setAutoPlayEnabled(localStorage.getItem(LS_AUTOPLAY_KEY) === 'true')
+    const saved = localStorage.getItem(LS_RESPONSE_MODE_KEY)
+    if (isValidMode(saved)) setResponseMode(saved)
+  }, [])
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -90,7 +107,6 @@ export function ChatInterface({
   function handleTranscript(text: string) {
     setInput(text)
     setFromVoice(true)
-    // Resize the textarea to fit the transcribed text
     requestAnimationFrame(() => resizeTextarea())
     textareaRef.current?.focus()
   }
@@ -99,6 +115,11 @@ export function ChatInterface({
     const next = !autoPlayEnabled
     setAutoPlayEnabled(next)
     localStorage.setItem(LS_AUTOPLAY_KEY, String(next))
+  }
+
+  function handleModeChange(mode: ResponseMode) {
+    setResponseMode(mode)
+    localStorage.setItem(LS_RESPONSE_MODE_KEY, mode)
   }
 
   const generateAudio = useCallback(
@@ -150,6 +171,9 @@ export function ChatInterface({
     setIsStreaming(true)
     setStreamingContent('')
 
+    // Capture mode at send-time so it can't change mid-request
+    const mode = responseMode
+
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
@@ -186,8 +210,13 @@ export function ChatInterface({
       setMessages((prev) => [...prev, { role: 'assistant', content: accumulated }])
       setStreamingContent('')
 
-      if (voiceEnabled && accumulated.length > 0) {
-        void generateAudio(assistantIdx, accumulated, opts?.forceAutoPlay || autoPlayEnabled)
+      if (voiceEnabled && mode !== 'text-only' && accumulated.length > 0) {
+        // voice-only always auto-plays; text-voice respects toggle / forceAutoPlay
+        const shouldAutoPlay =
+          mode === 'voice-only' ||
+          opts?.forceAutoPlay ||
+          autoPlayEnabled
+        void generateAudio(assistantIdx, accumulated, shouldAutoPlay)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong.')
@@ -211,6 +240,8 @@ export function ChatInterface({
   }
 
   const isEmpty = messages.length === 0 && !isStreaming
+  // In voice-only mode, show text during streaming; hide in committed bubbles
+  const effectiveMode = voiceEnabled ? responseMode : 'text-only'
 
   return (
     <div className="flex flex-col h-screen bg-[#06060f] text-white">
@@ -229,17 +260,28 @@ export function ChatInterface({
             Chatting with {profile.display_name}
           </span>
         </div>
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] p-0.5">
+            <span className="rounded-full px-3 py-1 text-xs font-medium bg-violet-600 text-white">
+              Chat
+            </span>
+            <Link
+              href="/conversation"
+              className="rounded-full px-3 py-1 text-xs font-medium text-white/40 hover:text-white/70 transition-colors"
+            >
+              Conversation
+            </Link>
+          </div>
           <Link
             href="/me"
-            className="text-sm text-white/40 hover:text-white/70 transition-colors"
+            className="text-sm text-white/40 hover:text-white/70 transition-colors hidden sm:block"
           >
             Profile
           </Link>
           <form action={logoutAction}>
             <button
               type="submit"
-              className="text-sm text-white/40 hover:text-white/70 transition-colors"
+              className="text-sm text-white/40 hover:text-white/70 transition-colors hidden sm:block"
             >
               Sign out
             </button>
@@ -289,6 +331,7 @@ export function ChatInterface({
                 msg.role === 'assistant' ? () => generateAudio(i, msg.content) : undefined
               }
               showVoice={voiceEnabled}
+              responseMode={effectiveMode}
             />
           ))}
 
@@ -297,6 +340,8 @@ export function ChatInterface({
               msg={{ role: 'assistant', content: streamingContent }}
               name={profile.display_name}
               streaming
+              showVoice={false}
+              responseMode="text-voice"
             />
           )}
 
@@ -323,32 +368,59 @@ export function ChatInterface({
       <div className="flex-shrink-0 border-t border-white/[0.06] px-4 py-4">
         <div className="max-w-2xl mx-auto">
 
-          {/* Voice controls row */}
-          <div className="mb-2.5 flex flex-wrap items-center gap-x-4 gap-y-2">
+          {/* Controls row */}
+          <div className="mb-2.5 flex flex-wrap items-center gap-x-3 gap-y-2">
             {voiceEnabled ? (
               <>
+                {/* Talk button */}
                 <PushToTalk onTranscript={handleTranscript} disabled={isStreaming} />
-                <button
-                  role="switch"
-                  aria-checked={autoPlayEnabled}
-                  onClick={toggleAutoPlay}
-                  className="flex items-center gap-2 group"
+
+                {/* Response mode selector */}
+                <div
+                  role="group"
+                  aria-label="Response mode"
+                  className="flex rounded-full border border-white/10 bg-white/[0.04] p-0.5"
                 >
-                  <span
-                    className={`relative flex-shrink-0 w-7 h-4 rounded-full transition-colors ${
-                      autoPlayEnabled ? 'bg-violet-600' : 'bg-white/15'
-                    }`}
+                  {RESPONSE_MODES.map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => handleModeChange(mode)}
+                      className={`rounded-full px-3 py-1 text-xs font-medium transition-all whitespace-nowrap ${
+                        responseMode === mode
+                          ? 'bg-violet-600 text-white shadow-sm'
+                          : 'text-white/35 hover:text-white/60'
+                      }`}
+                    >
+                      {MODE_LABELS[mode]}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Auto-play toggle — only relevant for text+voice mode */}
+                {responseMode === 'text-voice' && (
+                  <button
+                    role="switch"
+                    aria-checked={autoPlayEnabled}
+                    onClick={toggleAutoPlay}
+                    className="flex items-center gap-2 group"
                   >
                     <span
-                      className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${
-                        autoPlayEnabled ? 'translate-x-3' : 'translate-x-0'
+                      className={`relative flex-shrink-0 w-7 h-4 rounded-full transition-colors ${
+                        autoPlayEnabled ? 'bg-violet-600' : 'bg-white/15'
                       }`}
-                    />
-                  </span>
-                  <span className="text-xs text-white/35 group-hover:text-white/55 transition-colors select-none">
-                    Auto-play voice replies
-                  </span>
-                </button>
+                    >
+                      <span
+                        className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${
+                          autoPlayEnabled ? 'translate-x-3' : 'translate-x-0'
+                        }`}
+                      />
+                    </span>
+                    <span className="text-xs text-white/35 group-hover:text-white/55 transition-colors select-none">
+                      Auto-play
+                    </span>
+                  </button>
+                )}
               </>
             ) : (
               <p className="text-xs text-white/20">
@@ -447,6 +519,7 @@ function Bubble({
   audioState,
   onRequestAudio,
   showVoice = false,
+  responseMode = 'text-voice',
 }: {
   msg: Message
   name: string
@@ -454,10 +527,12 @@ function Bubble({
   audioState?: AudioState
   onRequestAudio?: () => void
   showVoice?: boolean
+  responseMode?: ResponseMode
 }) {
   const isUser = msg.role === 'user'
   const [isPlaying, setIsPlaying] = useState(false)
   const [playError, setPlayError] = useState<string | null>(null)
+  const [transcriptOpen, setTranscriptOpen] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   useEffect(() => {
@@ -512,6 +587,75 @@ function Bubble({
     }
   }
 
+  // ── Voice-only mode (committed assistant message) ─────────────────────────
+  if (!isUser && !streaming && showVoice && responseMode === 'voice-only') {
+    return (
+      <div className="flex gap-3">
+        <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center text-xs font-bold shadow-sm shadow-violet-500/30">
+          {name.charAt(0).toUpperCase()}
+        </div>
+
+        <div className="flex flex-col gap-1 max-w-[75%]">
+          <span className="text-xs text-white/25 ml-1">{name}</span>
+
+          {/* Voice card */}
+          <div className="rounded-2xl border border-white/[0.07] bg-white/[0.025] px-4 py-3">
+            {audioState?.loading ? (
+              <span className="flex items-center gap-2 text-sm text-white/35">
+                <span className="w-3.5 h-3.5 rounded-full border border-white/25 border-t-white/60 animate-spin flex-shrink-0" />
+                Generating voice…
+              </span>
+            ) : audioState?.error || playError ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-red-400/70">{audioState?.error ?? playError}</span>
+                <button
+                  onClick={() => { setPlayError(null); handleSpeakerClick() }}
+                  className="text-xs text-red-400/50 hover:text-red-400 underline underline-offset-2 transition-colors flex-shrink-0"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleSpeakerClick}
+                className={`flex items-center gap-2 text-sm font-medium transition-colors ${
+                  isPlaying ? 'text-violet-400' : 'text-white/60 hover:text-white/90'
+                }`}
+                title={isPlaying ? 'Stop' : 'Play'}
+              >
+                <span className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center border ${
+                  isPlaying
+                    ? 'border-violet-500/50 bg-violet-500/15'
+                    : 'border-white/15 bg-white/[0.05] hover:bg-white/[0.09]'
+                } transition-all`}>
+                  {isPlaying ? <StopIcon /> : <PlayIcon />}
+                </span>
+                {isPlaying ? 'Stop' : 'Play'}
+              </button>
+            )}
+
+            {/* View Transcript toggle */}
+            <button
+              onClick={() => setTranscriptOpen((v) => !v)}
+              className="mt-2.5 flex items-center gap-1 text-xs text-white/20 hover:text-white/45 transition-colors"
+            >
+              <ChevronIcon open={transcriptOpen} />
+              {transcriptOpen ? 'Hide Transcript' : 'View Transcript'}
+            </button>
+          </div>
+
+          {/* Collapsible transcript */}
+          {transcriptOpen && (
+            <div className="rounded-2xl px-4 py-3 text-sm leading-relaxed text-white/55 bg-white/[0.03] border border-white/[0.05] whitespace-pre-wrap break-words">
+              {msg.content}
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // ── Standard layout (text-voice and text-only) ────────────────────────────
   return (
     <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
       {!isUser && (
@@ -544,8 +688,8 @@ function Bubble({
           )}
         </div>
 
-        {/* Voice playback row — only for committed assistant messages */}
-        {!isUser && !streaming && showVoice && (
+        {/* Voice playback row — text-voice mode only, committed assistant messages */}
+        {!isUser && !streaming && showVoice && responseMode === 'text-voice' && (
           <div className="ml-1 mt-0.5">
             {audioState?.loading ? (
               <span className="flex items-center gap-1.5 text-xs text-white/25 py-1.5">
@@ -593,8 +737,26 @@ function PlayIcon() {
 
 function StopIcon() {
   return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
       <rect x="4" y="4" width="16" height="16" rx="2" />
+    </svg>
+  )
+}
+
+function ChevronIcon({ open }: { open: boolean }) {
+  return (
+    <svg
+      width="10"
+      height="10"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={`transition-transform flex-shrink-0 ${open ? 'rotate-180' : ''}`}
+    >
+      <polyline points="6 9 12 15 18 9" />
     </svg>
   )
 }
