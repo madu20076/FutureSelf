@@ -2,22 +2,22 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 // Maps FutureSelf voice style names to OpenAI TTS voice IDs
 const VOICE_MAP: Record<string, string> = {
-  calm:       'nova',     // warm, smooth, measured
-  direct:     'onyx',     // authoritative, clear
-  warm:       'shimmer',  // bright, expressive
-  deep:       'echo',     // resonant, considered
-  reflective: 'fable',    // narrative, thoughtful
+  'female-calm': 'nova',    // smooth, measured female — default
+  'female-warm': 'shimmer', // bright, expressive female
+  'male-calm':   'onyx',    // warm, authoritative male
+  'male-deep':   'echo',    // resonant, deep male
+  'neutral':     'alloy',   // balanced, gender-neutral
 }
 
-export const VOICE_STYLES = ['calm', 'direct', 'warm', 'deep', 'reflective'] as const
+export const VOICE_STYLES = ['female-calm', 'female-warm', 'male-calm', 'male-deep', 'neutral'] as const
 export type VoiceStyle = (typeof VOICE_STYLES)[number]
 
 export const VOICE_STYLE_LABELS: Record<VoiceStyle, string> = {
-  calm:       'Calm',
-  direct:     'Direct',
-  warm:       'Warm',
-  deep:       'Deep',
-  reflective: 'Reflective',
+  'female-calm': 'Female Calm',
+  'female-warm': 'Female Warm',
+  'male-calm':   'Male Calm',
+  'male-deep':   'Male Deep',
+  'neutral':     'Neutral',
 }
 
 export function getVoiceForStyle(style: string): string {

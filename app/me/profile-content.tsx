@@ -8,6 +8,7 @@ import { ProfileSettings } from './profile-settings'
 import { ShareButton } from './share-button'
 import { PortraitsSection } from './portraits-section'
 import { VoiceSettings } from './voice-settings'
+import { EditProfileForm } from './edit-profile'
 import type { VoiceStyle } from '@/lib/futureself/voice'
 
 type Props = {
@@ -138,6 +139,10 @@ export function ProfileContent({
               })}
             </div>
           </div>
+
+          {!storageOnly && (
+            <EditProfileForm profile={profile} username={username} />
+          )}
         </div>
 
         {/* ── Profile grid ── */}
@@ -229,7 +234,7 @@ export function ProfileContent({
         {!storageOnly && (
           <VoiceSettings
             initialEnabled={voiceEnabled ?? false}
-            initialStyle={voiceStyle ?? 'calm'}
+            initialStyle={voiceStyle ?? 'female-calm'}
             initialVoiceSample={initialVoiceSample ?? null}
           />
         )}

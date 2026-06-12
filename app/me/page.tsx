@@ -89,7 +89,7 @@ export default async function MePage() {
       portraits={portraits}
       hasReferencePhoto={hasReferencePhoto}
       voiceEnabled={row.voice_enabled ?? false}
-      voiceStyle={(row.voice_style as import('@/lib/futureself/voice').VoiceStyle | null) ?? 'calm'}
+      voiceStyle={(row.voice_style as import('@/lib/futureself/voice').VoiceStyle | null) ?? 'female-calm'}
       initialVoiceSample={initialVoiceSample}
     />
   )

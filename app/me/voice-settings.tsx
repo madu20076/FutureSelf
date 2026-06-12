@@ -6,11 +6,11 @@ import { VOICE_STYLES, VOICE_STYLE_LABELS, type VoiceStyle } from '@/lib/futures
 import { VoiceRecorder } from './voice-recorder'
 
 const STYLE_HINTS: Record<VoiceStyle, string> = {
-  calm:       'Smooth and measured — the default',
-  direct:     'Authoritative and clear',
-  warm:       'Bright and expressive',
-  deep:       'Resonant and considered',
-  reflective: 'Thoughtful, narrative feel',
+  'female-calm': 'Smooth and measured — the default',
+  'female-warm': 'Bright and expressive',
+  'male-calm':   'Warm and authoritative',
+  'male-deep':   'Resonant and considered',
+  'neutral':     'Balanced, gender-neutral tone',
 }
 
 type Props = {

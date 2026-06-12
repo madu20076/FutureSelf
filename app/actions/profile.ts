@@ -71,3 +71,49 @@ export async function saveProfileSettingsAction(
   revalidatePath('/me')
   return { saved: true, username }
 }
+
+export type ProfileEditsInput = {
+  personalitySummary: string
+  tone: string
+  boundaries: string
+  username?: string | null
+}
+
+type EditResult = { saved: true } | { saved: false; error: string }
+
+export async function saveProfileEditsAction(input: ProfileEditsInput): Promise<EditResult> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url || !key) return { saved: false, error: 'Supabase not configured.' }
+
+  const cookieStore = await cookies()
+  const token = cookieStore.get('sb-access-token')?.value
+  if (!token) return { saved: false, error: 'Not authenticated.' }
+
+  const supabase = createClient(url, key, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+  if (userError || !user) return { saved: false, error: 'Not authenticated.' }
+
+  const { error } = await supabase
+    .from('futureself_profiles')
+    .update({
+      personality_summary: input.personalitySummary.trim(),
+      tone: input.tone.trim(),
+      boundaries: input.boundaries.trim(),
+    })
+    .eq('user_id', user.id)
+
+  if (error) return { saved: false, error: error.message }
+
+  revalidatePath('/me')
+  revalidatePath('/chat')
+  if (input.username) revalidatePath(`/u/${input.username}`)
+  return { saved: true }
+}
