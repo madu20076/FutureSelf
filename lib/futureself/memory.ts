@@ -11,6 +11,7 @@ export type Memory = {
 const VALID_TYPES = [
   'goal', 'preference', 'belief', 'lesson',
   'decision', 'personal_fact', 'communication_style',
+  'challenge', 'win', 'relationship', 'project',
 ] as const
 
 type ValidType = typeof VALID_TYPES[number]
@@ -73,7 +74,7 @@ Rules:
 - Good: goals, values, preferences, beliefs, decisions, personal facts, communication style
 - Skip: greetings, small talk, one-off comments, vague statements, anything already saved above
 
-Return a JSON array. Each item: {"memory_type":"goal|preference|belief|lesson|decision|personal_fact|communication_style","content":"concise third-person fact","importance":1-5}
+Return a JSON array. Each item: {"memory_type":"goal|challenge|win|project|relationship|preference|belief|lesson|decision|personal_fact|communication_style","content":"concise third-person fact","importance":1-5}
 If nothing is worth saving, return: []`
 
   try {

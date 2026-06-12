@@ -23,6 +23,8 @@ type Props = {
   voiceEnabled?: boolean
   voiceStyle?: VoiceStyle
   initialVoiceSample?: { audioUrl: string; duration: number | null } | null
+  memoryCounts?: Record<string, number>
+  totalMemories?: number
 }
 
 function InfoCard({
@@ -53,6 +55,14 @@ function InfoCard({
   )
 }
 
+const MEMORY_DISPLAY = [
+  { key: 'goal',         label: 'Goals',         color: 'text-violet-400 bg-violet-500/10 border-violet-500/20' },
+  { key: 'win',          label: 'Wins',          color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
+  { key: 'project',      label: 'Projects',      color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
+  { key: 'challenge',    label: 'Challenges',    color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
+  { key: 'relationship', label: 'Relationships', color: 'text-pink-400 bg-pink-500/10 border-pink-500/20' },
+]
+
 export function ProfileContent({
   profile,
   answers,
@@ -65,6 +75,8 @@ export function ProfileContent({
   voiceEnabled,
   voiceStyle,
   initialVoiceSample,
+  memoryCounts = {},
+  totalMemories = 0,
 }: Props) {
   return (
     <div className="min-h-screen bg-[#06060f] text-white">
@@ -250,6 +262,58 @@ export function ProfileContent({
             </Link>
           </div>
         </div>
+
+        {/* ── Memories ── */}
+        {!storageOnly && totalMemories > 0 && (
+          <div className="rounded-2xl border border-white/[0.07] bg-white/[0.025] p-6 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-xs font-semibold uppercase tracking-widest text-white/35">
+                Memories
+              </p>
+              <Link
+                href="/memories"
+                className="text-xs text-violet-400/70 hover:text-violet-400 transition-colors"
+              >
+                View all →
+              </Link>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {MEMORY_DISPLAY.map(({ key, label, color }) => {
+                const count = memoryCounts[key] ?? 0
+                if (count === 0) return null
+                return (
+                  <Link
+                    key={key}
+                    href="/memories"
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-opacity hover:opacity-80 ${color}`}
+                  >
+                    {label}
+                    <span className="font-bold">{count}</span>
+                  </Link>
+                )
+              })}
+              {(() => {
+                const knownKeys = MEMORY_DISPLAY.map((d) => d.key)
+                const otherCount = Object.entries(memoryCounts)
+                  .filter(([k]) => !knownKeys.includes(k))
+                  .reduce((s, [, v]) => s + v, 0)
+                if (otherCount === 0) return null
+                return (
+                  <Link
+                    href="/memories"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-medium text-white/40 hover:opacity-80 transition-opacity"
+                  >
+                    Other
+                    <span className="font-bold">{otherCount}</span>
+                  </Link>
+                )
+              })()}
+            </div>
+            <p className="text-xs text-white/20 mt-3">
+              {totalMemories} {totalMemories === 1 ? 'memory' : 'memories'} — your FutureSelf references these when relevant
+            </p>
+          </div>
+        )}
 
         {/* ── Future Portraits ── */}
         {!storageOnly && (

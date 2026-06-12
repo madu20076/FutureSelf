@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import Link from 'next/link'
 import { logoutAction } from '@/app/actions/auth'
 import type { GeneratedProfile } from '@/lib/futureself/generate'
+import { RememberButton } from '@/app/chat/remember-button'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -471,8 +472,11 @@ export function ConversationView({
                     <div className="flex-shrink-0 w-6 h-6 rounded-md bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center text-xs font-bold mt-0.5">
                       {profile.display_name.charAt(0).toUpperCase()}
                     </div>
-                    <div className="rounded-2xl rounded-tl-sm bg-white/[0.06] border border-white/[0.07] px-4 py-2.5 text-white/80 max-w-[85%] leading-relaxed">
-                      {lastExchange.assistantText}
+                    <div className="max-w-[85%]">
+                      <div className="rounded-2xl rounded-tl-sm bg-white/[0.06] border border-white/[0.07] px-4 py-2.5 text-white/80 leading-relaxed">
+                        {lastExchange.assistantText}
+                      </div>
+                      <RememberButton assistantMessage={lastExchange.assistantText} />
                     </div>
                   </div>
                 </div>

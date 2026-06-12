@@ -58,8 +58,9 @@ export default async function MePage() {
   }
 
   type VoiceSampleRow = { audio_url: string; duration_seconds: number | null }
+  type MemoryCountRow = { memory_type: string }
 
-  const [portraits, refPhotosResult, voiceSampleResult] = await Promise.all([
+  const [portraits, refPhotosResult, voiceSampleResult, memoryCountResult] = await Promise.all([
     getPortraits(user.id, supabase),
     supabase.storage
       .from('future-portraits')
@@ -71,6 +72,11 @@ export default async function MePage() {
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle<VoiceSampleRow>(),
+    supabase
+      .from('futureself_memories')
+      .select('memory_type')
+      .eq('user_id', user.id)
+      .returns<MemoryCountRow[]>(),
   ])
 
   const hasReferencePhoto = (refPhotosResult.data?.length ?? 0) > 0
@@ -78,6 +84,13 @@ export default async function MePage() {
   const initialVoiceSample = voiceSampleResult.data
     ? { audioUrl: voiceSampleResult.data.audio_url, duration: voiceSampleResult.data.duration_seconds }
     : null
+
+  const memoryRows = memoryCountResult.data ?? []
+  const memoryCounts = memoryRows.reduce<Record<string, number>>((acc, r) => {
+    acc[r.memory_type] = (acc[r.memory_type] ?? 0) + 1
+    return acc
+  }, {})
+  const totalMemories = memoryRows.length
 
   return (
     <ProfileContent
@@ -91,6 +104,8 @@ export default async function MePage() {
       voiceEnabled={row.voice_enabled ?? false}
       voiceStyle={(row.voice_style as import('@/lib/futureself/voice').VoiceStyle | null) ?? 'female-calm'}
       initialVoiceSample={initialVoiceSample}
+      memoryCounts={memoryCounts}
+      totalMemories={totalMemories}
     />
   )
 }

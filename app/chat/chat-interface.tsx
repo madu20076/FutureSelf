@@ -6,6 +6,7 @@ import { logoutAction } from '@/app/actions/auth'
 import type { GeneratedProfile } from '@/lib/futureself/generate'
 import type { OnboardingAnswers } from '@/app/actions/onboarding'
 import { PushToTalk } from './push-to-talk'
+import { RememberButton } from './remember-button'
 
 function safeParseJson(text: string): Record<string, unknown> {
   try {
@@ -647,6 +648,11 @@ function Bubble({
               {msg.content}
             </div>
           )}
+
+          {/* Remember this */}
+          <div className="ml-1">
+            <RememberButton assistantMessage={msg.content} />
+          </div>
         </div>
       </div>
     )
@@ -717,6 +723,13 @@ function Bubble({
                 {isPlaying ? 'Stop' : 'Listen'}
               </button>
             )}
+          </div>
+        )}
+
+        {/* Remember this — committed assistant messages */}
+        {!isUser && !streaming && (
+          <div className="ml-1 mt-0.5">
+            <RememberButton assistantMessage={msg.content} />
           </div>
         )}
       </div>
