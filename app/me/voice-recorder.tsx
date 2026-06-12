@@ -199,8 +199,7 @@ export function VoiceRecorder({ onUploaded, initialVoiceSample }: Props) {
         Voice Sample
       </p>
       <p className="text-xs text-white/30 mb-4 leading-relaxed">
-        Record or upload a 10–60 second voice sample. Used in a future update to generate a voice
-        that sounds like you. You can re-record your voice as many times as you'd like.
+        Save a voice sample for future personalized voice cloning. Current chat playback uses preset voices.
       </p>
 
       {/* Consent */}
