@@ -340,6 +340,42 @@ export function ProfileContent({
               initialPortraits={portraits ?? []}
               hasReferencePhoto={hasReferencePhoto ?? false}
             />
+
+            {/* ── Talking Avatar section ── */}
+            <div className="mt-4 rounded-2xl border border-fuchsia-500/15 bg-gradient-to-br from-fuchsia-900/10 to-transparent p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-fuchsia-500/10 flex items-center justify-center flex-shrink-0">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="text-fuchsia-400"
+                  >
+                    <polygon points="23 7 16 12 23 17 23 7" />
+                    <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                    <h3 className="text-sm font-semibold text-white">Talking Avatar</h3>
+                    <span className="inline-flex items-center gap-1 rounded-full border border-fuchsia-500/25 bg-fuchsia-500/[0.07] px-2 py-0.5 text-[10px] font-semibold text-fuchsia-400">
+                      ★ Premium
+                    </span>
+                    <span className="inline-flex items-center rounded-full border border-amber-500/25 bg-amber-500/[0.07] px-2 py-0.5 text-[10px] font-medium text-amber-300/70">
+                      Coming Soon
+                    </span>
+                  </div>
+                  <p className="text-sm text-white/40 leading-relaxed">
+                    Your FutureSelf avatar will eventually speak with facial animation.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

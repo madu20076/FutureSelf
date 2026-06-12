@@ -490,6 +490,25 @@ export function ConversationView({
               )}
             </div>
           )}
+
+          {/* Talking Avatar — Coming Soon */}
+          <div className="w-full mt-2 rounded-2xl border border-fuchsia-500/10 bg-fuchsia-500/[0.04] px-4 py-3 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-white/50 truncate">Talking Avatar</p>
+              <p className="text-[11px] text-white/25 truncate">Facial animation for your FutureSelf</p>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className="inline-flex items-center gap-1 rounded-full border border-fuchsia-500/25 bg-fuchsia-500/[0.07] px-2 py-0.5 text-[10px] font-semibold text-fuchsia-400">
+                ★ Premium
+              </span>
+              <button
+                disabled
+                className="rounded-xl bg-white/[0.04] border border-white/[0.06] px-3 py-1.5 text-[11px] font-medium text-white/25 cursor-not-allowed"
+              >
+                Coming Soon
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
