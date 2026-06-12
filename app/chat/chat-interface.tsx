@@ -1,6 +1,14 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback, FormEvent, KeyboardEvent } from 'react'
+
+function safeParseJson(text: string): Record<string, unknown> {
+  try {
+    return text ? JSON.parse(text) : {}
+  } catch {
+    return {}
+  }
+}
 import Link from 'next/link'
 import { logoutAction } from '@/app/actions/auth'
 import type { GeneratedProfile } from '@/lib/futureself/generate'
@@ -72,7 +80,7 @@ export function ChatInterface({
           body: JSON.stringify({ text, voiceStyle }),
         })
         const resText = await res.text()
-        const data = resText ? JSON.parse(resText) : {}
+        const data = safeParseJson(resText) as { audioUrl?: string; error?: string }
         if (data.audioUrl) {
           setAudioMap((prev) => ({ ...prev, [idx]: { url: data.audioUrl, loading: false } }))
         } else {
@@ -118,7 +126,7 @@ export function ChatInterface({
 
       if (!res.ok) {
         const errText = await res.text().catch(() => '')
-        const payload = errText ? JSON.parse(errText) : {}
+        const payload = safeParseJson(errText) as { error?: string }
         throw new Error(payload.error ?? `Server error ${res.status}`)
       }
 

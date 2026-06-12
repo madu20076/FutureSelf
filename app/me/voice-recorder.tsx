@@ -2,6 +2,14 @@
 
 import { useState, useRef, useEffect, ChangeEvent } from 'react'
 
+function safeParseJson(text: string): Record<string, unknown> {
+  try {
+    return text ? JSON.parse(text) : {}
+  } catch {
+    return {}
+  }
+}
+
 type RecorderPhase =
   | 'idle'
   | 'requesting'
@@ -131,7 +139,7 @@ export function VoiceRecorder({ onUploaded }: Props) {
     try {
       const res = await fetch('/api/voice-sample', { method: 'POST', body: formData })
       const text = await res.text()
-      const data = (text ? JSON.parse(text) : {}) as { audioUrl?: string; error?: string }
+      const data = safeParseJson(text) as { audioUrl?: string; error?: string }
       if (data.audioUrl) {
         setUploadedUrl(data.audioUrl)
         setPhase('done')

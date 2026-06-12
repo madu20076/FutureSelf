@@ -2,6 +2,14 @@
 
 import { useState, useRef } from 'react'
 
+function safeParseJson(text: string): Record<string, unknown> {
+  try {
+    return text ? JSON.parse(text) : {}
+  } catch {
+    return {}
+  }
+}
+
 type Props = {
   onUploaded?: (urls: string[]) => void
 }
@@ -35,7 +43,7 @@ export function PhotoUpload({ onUploaded }: Props) {
 
     const res = await fetch('/api/upload-photo', { method: 'POST', body: formData })
     const text = await res.text()
-    const json = (text ? JSON.parse(text) : {}) as { urls?: string[]; error?: string }
+    const json = safeParseJson(text) as { urls?: string[]; error?: string }
 
     setUploading(false)
 
