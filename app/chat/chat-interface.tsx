@@ -55,6 +55,8 @@ export function ChatInterface({
   const [error, setError] = useState<string | null>(null)
   // keyed by committed message index
   const [audioMap, setAudioMap] = useState<Record<number, AudioState>>({})
+  // Ref kept in sync so generateAudio can read latest state without stale closure
+  const audioMapRef = useRef<Record<number, AudioState>>({})
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -62,6 +64,8 @@ export function ChatInterface({
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, streamingContent])
+
+  useEffect(() => { audioMapRef.current = audioMap }, [audioMap])
 
   function resizeTextarea() {
     const el = textareaRef.current
@@ -72,6 +76,8 @@ export function ChatInterface({
 
   const generateAudio = useCallback(
     async (idx: number, text: string) => {
+      const existing = audioMapRef.current[idx]
+      if (existing?.url || existing?.loading) return
       setAudioMap((prev) => ({ ...prev, [idx]: { loading: true } }))
       try {
         const res = await fetch('/api/voice', {
@@ -349,15 +355,15 @@ function Bubble({
   const [isPlaying, setIsPlaying] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
-  // Sync audio element when URL becomes available
   useEffect(() => {
-    if (audioState?.url) {
-      if (!audioRef.current) {
-        audioRef.current = new Audio(audioState.url)
-        audioRef.current.onended = () => setIsPlaying(false)
-      } else {
-        audioRef.current.src = audioState.url
-      }
+    if (!audioState?.url) return
+    const audio = new Audio(audioState.url)
+    audio.onended = () => setIsPlaying(false)
+    audioRef.current = audio
+    return () => {
+      audio.pause()
+      audio.onended = null
+      if (audioRef.current === audio) audioRef.current = null
     }
   }, [audioState?.url])
 
@@ -414,33 +420,29 @@ function Bubble({
         {!isUser && !streaming && showVoice && (
           <div className="ml-1 mt-0.5">
             {audioState?.loading ? (
-              <span className="flex items-center gap-1.5 text-xs text-white/25">
+              <span className="flex items-center gap-1.5 text-xs text-white/25 py-1.5">
                 <span className="w-3 h-3 rounded-full border border-white/25 border-t-white/60 animate-spin" />
-                Generating audio…
+                Generating voice…
               </span>
             ) : audioState?.error ? (
               <button
                 onClick={handleSpeakerClick}
-                className="flex items-center gap-1.5 text-xs text-red-400/60 hover:text-red-400 transition-colors"
-                title="Retry audio"
+                className="flex items-center gap-1.5 text-xs py-1.5 px-2 -mx-2 rounded-md text-red-400/60 hover:text-red-400 transition-colors"
+                title="Retry"
               >
-                <SpeakerIcon />
+                <PlayIcon />
                 Retry
               </button>
             ) : (
               <button
                 onClick={handleSpeakerClick}
-                className={`flex items-center gap-1.5 text-xs transition-colors ${
-                  isPlaying
-                    ? 'text-violet-400'
-                    : audioState?.url
-                    ? 'text-white/30 hover:text-white/60'
-                    : 'text-white/20 hover:text-white/40'
+                className={`flex items-center gap-1.5 text-xs py-1.5 px-2 -mx-2 rounded-md transition-colors ${
+                  isPlaying ? 'text-violet-400' : 'text-white/30 hover:text-white/60'
                 }`}
-                title={isPlaying ? 'Stop' : audioState?.url ? 'Play' : 'Generate audio'}
+                title={isPlaying ? 'Stop' : 'Listen'}
               >
-                {isPlaying ? <StopIcon /> : <SpeakerIcon />}
-                {isPlaying ? 'Stop' : audioState?.url ? 'Play' : 'Listen'}
+                {isPlaying ? <StopIcon /> : <PlayIcon />}
+                {isPlaying ? 'Stop' : 'Listen'}
               </button>
             )}
           </div>
@@ -450,12 +452,10 @@ function Bubble({
   )
 }
 
-function SpeakerIcon() {
+function PlayIcon() {
   return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-      <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
-      <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+      <polygon points="5 3 19 12 5 21 5 3" />
     </svg>
   )
 }
