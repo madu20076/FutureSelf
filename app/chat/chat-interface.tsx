@@ -71,7 +71,8 @@ export function ChatInterface({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text, voiceStyle }),
         })
-        const data = await res.json()
+        const resText = await res.text()
+        const data = resText ? JSON.parse(resText) : {}
         if (data.audioUrl) {
           setAudioMap((prev) => ({ ...prev, [idx]: { url: data.audioUrl, loading: false } }))
         } else {
@@ -116,7 +117,8 @@ export function ChatInterface({
       })
 
       if (!res.ok) {
-        const payload = await res.json().catch(() => ({}))
+        const errText = await res.text().catch(() => '')
+        const payload = errText ? JSON.parse(errText) : {}
         throw new Error(payload.error ?? `Server error ${res.status}`)
       }
 

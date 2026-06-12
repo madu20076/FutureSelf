@@ -130,7 +130,8 @@ export function VoiceRecorder({ onUploaded }: Props) {
 
     try {
       const res = await fetch('/api/voice-sample', { method: 'POST', body: formData })
-      const data = await res.json() as { audioUrl?: string; error?: string }
+      const text = await res.text()
+      const data = (text ? JSON.parse(text) : {}) as { audioUrl?: string; error?: string }
       if (data.audioUrl) {
         setUploadedUrl(data.audioUrl)
         setPhase('done')

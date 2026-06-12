@@ -34,7 +34,8 @@ export function PhotoUpload({ onUploaded }: Props) {
     for (const file of list) formData.append('photos', file)
 
     const res = await fetch('/api/upload-photo', { method: 'POST', body: formData })
-    const json = (await res.json()) as { urls?: string[]; error?: string }
+    const text = await res.text()
+    const json = (text ? JSON.parse(text) : {}) as { urls?: string[]; error?: string }
 
     setUploading(false)
 
