@@ -52,17 +52,30 @@ export default async function ChatPage() {
     response_style: (row.response_style as GeneratedProfile['response_style']) ?? 'Balanced',
   }
 
-  // Load top memories to seed the system prompt
-  const { data: memoriesData } = await supabase
-    .from('futureself_memories')
-    .select('memory_type, content, importance')
-    .eq('user_id', user.id)
-    .order('importance', { ascending: false })
-    .order('created_at', { ascending: false })
-    .limit(10)
+  type CloneSampleRow = { clone_voice_id: string | null }
 
-  const memories: MemoryRecord[] = memoriesData ?? []
+  // Load memories + voice clone status in parallel
+  const [memoriesResult, cloneSampleResult] = await Promise.all([
+    supabase
+      .from('futureself_memories')
+      .select('memory_type, content, importance')
+      .eq('user_id', user.id)
+      .order('importance', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(10),
+    supabase
+      .from('voice_samples')
+      .select('clone_voice_id')
+      .eq('user_id', user.id)
+      .eq('clone_status', 'ready')
+      .not('clone_voice_id', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle<CloneSampleRow>(),
+  ])
 
+  const memories: MemoryRecord[] = memoriesResult.data ?? []
+  const cloneVoiceId = cloneSampleResult.data?.clone_voice_id ?? null
   const systemPrompt = buildSystemPrompt(profile, row.onboarding, memories)
 
   return (
@@ -73,6 +86,7 @@ export default async function ChatPage() {
       systemPrompt={systemPrompt}
       voiceEnabled={row.voice_enabled === true}
       voiceStyle={row.voice_style ?? 'calm'}
+      cloneVoiceId={cloneVoiceId}
     />
   )
 }

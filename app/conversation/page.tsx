@@ -52,7 +52,9 @@ export default async function ConversationPage() {
     response_style: (row.response_style as GeneratedProfile['response_style']) ?? 'Balanced',
   }
 
-  const [portraits, memoriesResult] = await Promise.all([
+  type CloneSampleRow = { clone_voice_id: string | null }
+
+  const [portraits, memoriesResult, cloneSampleResult] = await Promise.all([
     getPortraits(user.id, supabase),
     supabase
       .from('futureself_memories')
@@ -61,11 +63,21 @@ export default async function ConversationPage() {
       .order('importance', { ascending: false })
       .order('created_at', { ascending: false })
       .limit(10),
+    supabase
+      .from('voice_samples')
+      .select('clone_voice_id')
+      .eq('user_id', user.id)
+      .eq('clone_status', 'ready')
+      .not('clone_voice_id', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle<CloneSampleRow>(),
   ])
 
   const memories: MemoryRecord[] = memoriesResult.data ?? []
   const systemPrompt = buildSystemPrompt(profile, row.onboarding, memories)
-  const portraitUrl = portraits[0]?.image_url ?? null
+  const portraitUrl  = portraits[0]?.image_url ?? null
+  const cloneVoiceId = cloneSampleResult.data?.clone_voice_id ?? null
 
   return (
     <ConversationView
@@ -74,6 +86,7 @@ export default async function ConversationPage() {
       voiceEnabled={row.voice_enabled === true}
       voiceStyle={row.voice_style ?? 'female-calm'}
       portraitUrl={portraitUrl}
+      cloneVoiceId={cloneVoiceId}
     />
   )
 }

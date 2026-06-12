@@ -31,12 +31,13 @@ type AudioState = {
 type ResponseMode = 'text-voice' | 'voice-only' | 'text-only'
 
 type Props = {
-  profile: GeneratedProfile
-  answers: OnboardingAnswers
-  userId: string | null
-  systemPrompt: string
+  profile:       GeneratedProfile
+  answers:       OnboardingAnswers
+  userId:        string | null
+  systemPrompt:  string
   voiceEnabled?: boolean
-  voiceStyle?: string
+  voiceStyle?:   string
+  cloneVoiceId?: string | null
 }
 
 const SUGGESTIONS = () => [
@@ -65,6 +66,7 @@ export function ChatInterface({
   systemPrompt,
   voiceEnabled = false,
   voiceStyle = 'female-calm',
+  cloneVoiceId = null,
 }: Props) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -129,22 +131,40 @@ export function ChatInterface({
       if (existing?.url || existing?.loading) return
       setAudioMap((prev) => ({ ...prev, [idx]: { loading: true, autoPlay: shouldAutoPlay } }))
       try {
-        const res = await fetch('/api/voice', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text, voiceStyle }),
-        })
-        const resText = await res.text()
-        const data = safeParseJson(resText) as { audioUrl?: string; error?: string }
-        if (data.audioUrl) {
+        let audioUrl: string | undefined
+        let audioError: string | undefined
+
+        // Try cloned voice first; fall back to OpenAI preset if unavailable
+        if (cloneVoiceId) {
+          const cloneRes  = await fetch('/api/voice-clone/speak', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text }),
+          })
+          const cloneData = safeParseJson(await cloneRes.text()) as { audioUrl?: string }
+          audioUrl = cloneData.audioUrl
+        }
+
+        if (!audioUrl) {
+          const res     = await fetch('/api/voice', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text, voiceStyle }),
+          })
+          const data    = safeParseJson(await res.text()) as { audioUrl?: string; error?: string }
+          audioUrl      = data.audioUrl
+          audioError    = data.error
+        }
+
+        if (audioUrl) {
           setAudioMap((prev) => ({
             ...prev,
-            [idx]: { url: data.audioUrl, loading: false, autoPlay: prev[idx]?.autoPlay },
+            [idx]: { url: audioUrl, loading: false, autoPlay: prev[idx]?.autoPlay },
           }))
         } else {
           setAudioMap((prev) => ({
             ...prev,
-            [idx]: { loading: false, error: data.error ?? 'Audio generation failed.' },
+            [idx]: { loading: false, error: audioError ?? 'Audio generation failed.' },
           }))
         }
       } catch (err) {
@@ -155,7 +175,7 @@ export function ChatInterface({
         }))
       }
     },
-    [voiceStyle]
+    [voiceStyle, cloneVoiceId]
   )
 
   async function sendMessage(text: string, opts?: { forceAutoPlay?: boolean }) {

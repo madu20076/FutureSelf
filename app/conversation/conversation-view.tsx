@@ -21,11 +21,12 @@ type Message = { role: 'user' | 'assistant'; content: string }
 type LastExchange = { userText: string; assistantText: string }
 
 type Props = {
-  profile: GeneratedProfile
-  systemPrompt: string
-  voiceEnabled: boolean
-  voiceStyle: string
-  portraitUrl: string | null
+  profile:       GeneratedProfile
+  systemPrompt:  string
+  voiceEnabled:  boolean
+  voiceStyle:    string
+  portraitUrl:   string | null
+  cloneVoiceId:  string | null
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -51,6 +52,7 @@ export function ConversationView({
   voiceEnabled,
   voiceStyle,
   portraitUrl,
+  cloneVoiceId,
 }: Props) {
   const [phase, setPhase]               = useState<Phase>('idle')
   const [errorMsg, setErrorMsg]         = useState<string | null>(null)
@@ -190,16 +192,32 @@ export function ConversationView({
   }
 
   async function generateAndPlay(text: string) {
-    // Still shows 'thinking' until audio is ready
     try {
-      const res = await fetch('/api/voice', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, voiceStyle }),
-      })
-      const data = safeJson(await res.text()) as { audioUrl?: string; error?: string }
-      if (!data.audioUrl) throw new Error(data.error ?? 'Voice generation failed.')
-      await playAudio(data.audioUrl)
+      let audioUrl: string | undefined
+
+      // Try cloned voice first; fall back to OpenAI preset if unavailable
+      if (cloneVoiceId) {
+        const cloneRes = await fetch('/api/voice-clone/speak', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text }),
+        })
+        const cloneData = safeJson(await cloneRes.text()) as { audioUrl?: string }
+        audioUrl = cloneData.audioUrl
+      }
+
+      if (!audioUrl) {
+        const res = await fetch('/api/voice', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, voiceStyle }),
+        })
+        const data = safeJson(await res.text()) as { audioUrl?: string; error?: string }
+        if (!data.audioUrl) throw new Error(data.error ?? 'Voice generation failed.')
+        audioUrl = data.audioUrl
+      }
+
+      await playAudio(audioUrl)
     } catch (err) {
       fail(err instanceof Error ? err.message : 'Voice generation failed.')
     }

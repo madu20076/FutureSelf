@@ -112,24 +112,6 @@ export function VoiceSettings({ initialEnabled, initialStyle, initialVoiceSample
       </button>
 
       <VoiceRecorder initialVoiceSample={initialVoiceSample ?? null} />
-
-      {/* ── Coming Soon: Use My Recorded Voice ── */}
-      <div className="mt-6 pt-6 border-t border-white/[0.06]">
-        <div className="flex items-start justify-between gap-4 mb-2">
-          <div>
-            <p className="text-sm font-medium text-white/35">Use My Recorded Voice</p>
-            <p className="text-xs text-white/20 mt-0.5">
-              Personalized voice cloning powered by your sample.
-            </p>
-          </div>
-          <span className="flex-shrink-0 inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-0.5 text-xs text-white/25">
-            Coming Soon
-          </span>
-        </div>
-        <p className="text-xs text-white/15 leading-relaxed">
-          Once available, FutureSelf will generate responses in a voice that sounds like you — using your saved sample above.
-        </p>
-      </div>
     </div>
   )
 }

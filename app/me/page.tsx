@@ -57,7 +57,13 @@ export default async function MePage() {
     response_style: (row.response_style as GeneratedProfile['response_style']) ?? 'Balanced',
   }
 
-  type VoiceSampleRow = { audio_url: string; duration_seconds: number | null }
+  type VoiceSampleRow = {
+    id:               string
+    audio_url:        string
+    duration_seconds: number | null
+    clone_voice_id:   string | null
+    clone_status:     string | null
+  }
   type MemoryCountRow = { memory_type: string }
 
   const [portraits, refPhotosResult, voiceSampleResult, memoryCountResult] = await Promise.all([
@@ -67,7 +73,7 @@ export default async function MePage() {
       .list(`${user.id}/input`, { limit: 1 }),
     supabase
       .from('voice_samples')
-      .select('audio_url, duration_seconds')
+      .select('id, audio_url, duration_seconds, clone_voice_id, clone_status')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -82,8 +88,16 @@ export default async function MePage() {
   const hasReferencePhoto = (refPhotosResult.data?.length ?? 0) > 0
 
   const initialVoiceSample = voiceSampleResult.data
-    ? { audioUrl: voiceSampleResult.data.audio_url, duration: voiceSampleResult.data.duration_seconds }
+    ? {
+        audioUrl:     voiceSampleResult.data.audio_url,
+        duration:     voiceSampleResult.data.duration_seconds,
+        sampleId:     voiceSampleResult.data.id,
+        cloneVoiceId: voiceSampleResult.data.clone_voice_id,
+        cloneStatus:  voiceSampleResult.data.clone_status,
+      }
     : null
+
+  const voiceCloneEnabled = !!process.env.ELEVENLABS_API_KEY
 
   const memoryRows = memoryCountResult.data ?? []
   const memoryCounts = memoryRows.reduce<Record<string, number>>((acc, r) => {
@@ -104,6 +118,7 @@ export default async function MePage() {
       voiceEnabled={row.voice_enabled ?? false}
       voiceStyle={(row.voice_style as import('@/lib/futureself/voice').VoiceStyle | null) ?? 'female-calm'}
       initialVoiceSample={initialVoiceSample}
+      voiceCloneEnabled={voiceCloneEnabled}
       memoryCounts={memoryCounts}
       totalMemories={totalMemories}
     />
