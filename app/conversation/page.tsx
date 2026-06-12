@@ -86,8 +86,9 @@ export default async function ConversationPage() {
   ])
 
   const memories: MemoryRecord[] = memoriesResult.data ?? []
-  const portraitUrl  = portraits[0]?.image_url ?? null
-  const cloneVoiceId = cloneSampleResult.data?.clone_voice_id ?? null
+  const portraitUrl    = portraits[0]?.image_url ?? null
+  const cloneVoiceId   = cloneSampleResult.data?.clone_voice_id ?? null
+  const avatarEnabled  = !!process.env.DID_API_KEY
 
   const commRow = commProfileResult.data
   const communicationProfile = commRow ? {
@@ -111,6 +112,7 @@ export default async function ConversationPage() {
       voiceStyle={row.voice_style ?? 'female-calm'}
       portraitUrl={portraitUrl}
       cloneVoiceId={cloneVoiceId}
+      avatarEnabled={avatarEnabled}
     />
   )
 }
