@@ -71,7 +71,7 @@ export default async function ChatPage() {
       answers={row.onboarding}
       userId={user.id}
       systemPrompt={systemPrompt}
-      voiceEnabled={row.voice_enabled ?? false}
+      voiceEnabled={row.voice_enabled === true}
       voiceStyle={row.voice_style ?? 'calm'}
     />
   )

@@ -187,6 +187,12 @@ export function ChatInterface({
   return (
     <div className="flex flex-col h-screen bg-[#06060f] text-white">
 
+      {/* ── DEBUG — remove after confirming voice works ── */}
+      <div className="flex-shrink-0 bg-yellow-500/10 border-b border-yellow-500/20 px-4 py-1 text-center text-xs text-yellow-400/80">
+        Voice enabled: <strong>{String(voiceEnabled)}</strong>
+        {' · '}Voice style: <strong>{voiceStyle}</strong>
+      </div>
+
       {/* ── Nav ── */}
       <nav className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-white/[0.06] bg-[#06060f]/90 backdrop-blur-md z-10">
         <div className="flex items-center gap-3 min-w-0">
@@ -268,7 +274,7 @@ export function ChatInterface({
               onRequestAudio={
                 msg.role === 'assistant' ? () => generateAudio(i, msg.content) : undefined
               }
-              showVoice={voiceEnabled && msg.role === 'assistant'}
+              showVoice={voiceEnabled}
             />
           ))}
 
