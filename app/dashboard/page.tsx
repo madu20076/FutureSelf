@@ -171,6 +171,14 @@ function Section({ def, items }: { def: SectionDef; items: MemoryRow[] }) {
   )
 }
 
+function getISOWeekStart(): string {
+  const d = new Date()
+  const day = d.getDay()
+  d.setDate(d.getDate() - (day === 0 ? 6 : day - 1))
+  d.setHours(0, 0, 0, 0)
+  return d.toISOString().slice(0, 10)
+}
+
 export default async function DashboardPage() {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
     return (
@@ -189,9 +197,12 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser()
   if (userError || !user) redirect('/login')
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today       = new Date().toISOString().slice(0, 10)
+  const dayOfWeek   = new Date().getDay()
+  const isReflectionDay = [0, 5, 6].includes(dayOfWeek)
+  const weekStart   = getISOWeekStart()
 
-  const [{ data: memories }, { data: focusItems }] = await Promise.all([
+  const [{ data: memories }, { data: focusItems }, { data: reflectionCheck }] = await Promise.all([
     supabase
       .from('futureself_memories')
       .select('id, memory_type, content, importance, created_at')
@@ -206,9 +217,18 @@ export default async function DashboardPage() {
       .eq('focus_date', today)
       .order('created_at', { ascending: true })
       .returns<FocusRow[]>(),
+    supabase
+      .from('futureself_memories')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('source', 'weekly_reflection')
+      .gte('created_at', `${weekStart}T00:00:00.000Z`)
+      .limit(1)
+      .returns<{ id: string }[]>(),
   ])
 
   const all = memories ?? []
+  const reflectionDoneThisWeek = (reflectionCheck?.length ?? 0) > 0
 
   const grouped = Object.fromEntries(
     SECTIONS.map((s) => [s.id, all.filter((m) => s.types.includes(m.memory_type))])
@@ -253,6 +273,12 @@ export default async function DashboardPage() {
             </Link>
           </div>
           <Link
+            href="/reflection"
+            className="text-sm text-white/40 hover:text-white/70 transition-colors hidden sm:block"
+          >
+            Reflect
+          </Link>
+          <Link
             href="/me"
             className="text-sm text-white/40 hover:text-white/70 transition-colors hidden sm:block"
           >
@@ -283,6 +309,54 @@ export default async function DashboardPage() {
             Everything your FutureSelf is tracking about you.
           </p>
         </div>
+
+        {/* Weekly reflection banner — shown Fri / Sat / Sun */}
+        {isReflectionDay && (
+          <div
+            className={`rounded-2xl border p-4 mb-6 flex items-center justify-between gap-4 flex-wrap ${
+              reflectionDoneThisWeek
+                ? 'border-emerald-500/20 bg-emerald-500/[0.06]'
+                : 'border-amber-500/20 bg-amber-500/[0.06]'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <span
+                className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                  reflectionDoneThisWeek ? 'bg-emerald-500/15' : 'bg-amber-500/15'
+                }`}
+              >
+                {reflectionDoneThisWeek ? (
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                ) : (
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400">
+                    <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                  </svg>
+                )}
+              </span>
+              <div>
+                <p className={`text-sm font-medium ${reflectionDoneThisWeek ? 'text-emerald-300' : 'text-amber-300'}`}>
+                  {reflectionDoneThisWeek ? 'Weekly Reflection Complete' : 'Time for your weekly review'}
+                </p>
+                {!reflectionDoneThisWeek && (
+                  <p className="text-xs text-white/30 mt-0.5">Take 5 minutes to reflect on the week.</p>
+                )}
+              </div>
+            </div>
+            {!reflectionDoneThisWeek && (
+              <Link
+                href="/reflection"
+                className="flex-shrink-0 inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 px-4 py-2 text-xs font-semibold text-amber-300 hover:bg-amber-500/25 transition-all"
+              >
+                Start Reflection
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+                </svg>
+              </Link>
+            )}
+          </div>
+        )}
 
         {/* Tracking summary */}
         {trackingParts.length > 0 ? (

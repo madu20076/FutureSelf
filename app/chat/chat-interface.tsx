@@ -280,6 +280,12 @@ export function ChatInterface({
             Dashboard
           </Link>
           <Link
+            href="/reflection"
+            className="text-sm text-white/40 hover:text-white/70 transition-colors hidden sm:block"
+          >
+            Reflect
+          </Link>
+          <Link
             href="/me"
             className="text-sm text-white/40 hover:text-white/70 transition-colors hidden sm:block"
           >
