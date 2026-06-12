@@ -101,6 +101,18 @@ export function ProfileContent({
           >
             Dashboard
           </Link>
+          <Link
+            href="/billing"
+            className="text-sm text-white/40 hover:text-white/70 transition-colors hidden sm:block"
+          >
+            Billing
+          </Link>
+          <Link
+            href="/pricing"
+            className="text-sm text-white/40 hover:text-white/70 transition-colors hidden sm:block"
+          >
+            Pricing
+          </Link>
           <form action={logoutAction}>
             <button
               type="submit"
@@ -317,19 +329,35 @@ export function ProfileContent({
 
         {/* ── Future Portraits ── */}
         {!storageOnly && (
-          <PortraitsSection
-            initialPortraits={portraits ?? []}
-            hasReferencePhoto={hasReferencePhoto ?? false}
-          />
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="inline-flex items-center gap-1 rounded-full border border-fuchsia-500/25 bg-fuchsia-500/[0.07] px-2.5 py-1 text-xs font-semibold text-fuchsia-400">
+                ★ Premium
+              </span>
+              <span className="text-xs text-amber-300/60 font-medium">Talking Avatar — Coming Soon</span>
+            </div>
+            <PortraitsSection
+              initialPortraits={portraits ?? []}
+              hasReferencePhoto={hasReferencePhoto ?? false}
+            />
+          </div>
         )}
 
         {/* ── Voice Settings ── */}
         {!storageOnly && (
-          <VoiceSettings
-            initialEnabled={voiceEnabled ?? false}
-            initialStyle={voiceStyle ?? 'female-calm'}
-            initialVoiceSample={initialVoiceSample ?? null}
-          />
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="inline-flex items-center gap-1 rounded-full border border-fuchsia-500/25 bg-fuchsia-500/[0.07] px-2.5 py-1 text-xs font-semibold text-fuchsia-400">
+                ★ Premium
+              </span>
+              <span className="text-xs text-amber-300/60 font-medium">Voice Cloning — Coming Soon</span>
+            </div>
+            <VoiceSettings
+              initialEnabled={voiceEnabled ?? false}
+              initialStyle={voiceStyle ?? 'female-calm'}
+              initialVoiceSample={initialVoiceSample ?? null}
+            />
+          </div>
         )}
 
         {/* ── Profile Settings ── */}

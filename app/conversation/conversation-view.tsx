@@ -294,8 +294,9 @@ export function ConversationView({
           >
             Chat
           </Link>
-          <span className="rounded-full px-3 py-1 text-xs font-medium bg-violet-600 text-white">
+          <span className="rounded-full px-3 py-1 text-xs font-medium bg-violet-600 text-white inline-flex items-center gap-1.5">
             Conversation
+            <span className="rounded-full bg-fuchsia-400/40 px-1 py-px text-[9px] font-bold leading-none">★</span>
           </span>
         </div>
 

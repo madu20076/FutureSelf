@@ -268,9 +268,10 @@ export function ChatInterface({
             </span>
             <Link
               href="/conversation"
-              className="rounded-full px-3 py-1 text-xs font-medium text-white/40 hover:text-white/70 transition-colors"
+              className="rounded-full px-3 py-1 text-xs font-medium text-white/40 hover:text-white/70 transition-colors inline-flex items-center gap-1.5"
             >
               Conversation
+              <span className="rounded-full bg-fuchsia-400/30 px-1 py-px text-[9px] font-bold leading-none text-fuchsia-300/70">★</span>
             </Link>
           </div>
           <Link
