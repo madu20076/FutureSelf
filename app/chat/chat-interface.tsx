@@ -301,6 +301,12 @@ export function ChatInterface({
             Dashboard
           </Link>
           <Link
+            href="/coaching"
+            className="text-sm text-white/40 hover:text-white/70 transition-colors hidden sm:block"
+          >
+            Coaching
+          </Link>
+          <Link
             href="/reflection"
             className="text-sm text-white/40 hover:text-white/70 transition-colors hidden sm:block"
           >

@@ -4,7 +4,9 @@ import { createAuthenticatedClient } from '@/lib/supabase/server'
 import { logoutAction } from '@/app/actions/auth'
 import { QuickAddSection } from './quick-add'
 import { FocusCard } from './focus-card'
+import { CoachingWidget } from './coaching-widget'
 import type { FocusRow } from '@/app/actions/focus'
+import type { CoachingReport } from '@/lib/futureself/coaching'
 
 export const dynamic = 'force-dynamic'
 
@@ -202,7 +204,14 @@ export default async function DashboardPage() {
   const isReflectionDay = [0, 5, 6].includes(dayOfWeek)
   const weekStart   = getISOWeekStart()
 
-  const [{ data: memories }, { data: focusItems }, { data: reflectionCheck }] = await Promise.all([
+  type CoachingReportRow = { report_json: CoachingReport; created_at: string }
+
+  const [
+    { data: memories },
+    { data: focusItems },
+    { data: reflectionCheck },
+    { data: coachingRow },
+  ] = await Promise.all([
     supabase
       .from('futureself_memories')
       .select('id, memory_type, content, importance, created_at')
@@ -225,7 +234,16 @@ export default async function DashboardPage() {
       .gte('created_at', `${weekStart}T00:00:00.000Z`)
       .limit(1)
       .returns<{ id: string }[]>(),
+    supabase
+      .from('futureself_coaching_reports')
+      .select('report_json, created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle<CoachingReportRow>(),
   ])
+
+  const latestCoachingReport: CoachingReport | null = coachingRow?.report_json ?? null
 
   const all = memories ?? []
   const reflectionDoneThisWeek = (reflectionCheck?.length ?? 0) > 0
@@ -272,6 +290,12 @@ export default async function DashboardPage() {
               Conversation
             </Link>
           </div>
+          <Link
+            href="/coaching"
+            className="text-sm text-white/40 hover:text-white/70 transition-colors hidden sm:block"
+          >
+            Coaching
+          </Link>
           <Link
             href="/reflection"
             className="text-sm text-white/40 hover:text-white/70 transition-colors hidden sm:block"
@@ -392,6 +416,9 @@ export default async function DashboardPage() {
 
         {/* Today's Focus */}
         <FocusCard initialItems={focusItems ?? []} />
+
+        {/* AI Coaching widget */}
+        <CoachingWidget report={latestCoachingReport} />
 
         {/* Quick add */}
         <QuickAddSection />

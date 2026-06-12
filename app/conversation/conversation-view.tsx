@@ -322,6 +322,9 @@ export function ConversationView({
           <Link href="/dashboard" className="text-xs text-white/40 hover:text-white/70 transition-colors hidden sm:block">
             Dashboard
           </Link>
+          <Link href="/coaching" className="text-xs text-white/40 hover:text-white/70 transition-colors hidden sm:block">
+            Coaching
+          </Link>
           <Link href="/reflection" className="text-xs text-white/40 hover:text-white/70 transition-colors hidden sm:block">
             Reflect
           </Link>
