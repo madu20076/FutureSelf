@@ -1,0 +1,40 @@
+{
+  "id": "/dashboard",
+  "name": "FutureSelf",
+  "short_name": "FutureSelf",
+  "description": "Talk to your future self",
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#7c3aed",
+  "background_color": "#06060f",
+  "icons": [
+    {
+      "src": "/api/icon/192",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/api/icon/512",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/api/icon/192",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/api/icon/512",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["lifestyle", "productivity"],
+  "screenshots": []
+}
