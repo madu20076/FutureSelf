@@ -10,6 +10,7 @@ import { PortraitsSection } from './portraits-section'
 import { VoiceSettings } from './voice-settings'
 import { VoiceCloneCard } from './voice-clone-card'
 import { EditProfileForm } from './edit-profile'
+import { InstallSection } from './install-section'
 import type { VoiceStyle } from '@/lib/futureself/voice'
 
 type Props = {
@@ -409,6 +410,9 @@ export function ProfileContent({
             />
           </div>
         )}
+
+        {/* ── Install App ── */}
+        {!storageOnly && <InstallSection />}
 
         {/* ── Profile Settings ── */}
         {!storageOnly && (

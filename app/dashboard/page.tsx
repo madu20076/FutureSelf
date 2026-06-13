@@ -6,6 +6,7 @@ import { QuickAddSection } from './quick-add'
 import { FocusCard } from './focus-card'
 import { CoachingWidget } from './coaching-widget'
 import { CommunicationWidget } from './communication-widget'
+import { OnboardingChecklist } from './onboarding-checklist'
 import type { FocusRow } from '@/app/actions/focus'
 import type { CoachingReport } from '@/lib/futureself/coaching'
 import type { CommunicationProfile } from '@/lib/futureself/communication'
@@ -220,6 +221,8 @@ export default async function DashboardPage() {
     { data: reflectionCheck },
     { data: coachingRow },
     { data: commRow },
+    { data: voiceSampleCheck },
+    { data: everReflectedCheck },
   ] = await Promise.all([
     supabase
       .from('futureself_memories')
@@ -255,6 +258,19 @@ export default async function DashboardPage() {
       .select('communication_style, decision_style, motivation_style, leadership_style, planning_style, risk_tolerance, summary, updated_at')
       .eq('user_id', user.id)
       .maybeSingle<CommProfileRow>(),
+    supabase
+      .from('voice_samples')
+      .select('id')
+      .eq('user_id', user.id)
+      .limit(1)
+      .maybeSingle<{ id: string }>(),
+    supabase
+      .from('futureself_memories')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('source', 'weekly_reflection')
+      .limit(1)
+      .maybeSingle<{ id: string }>(),
   ])
 
   const latestCoachingReport: CoachingReport | null = coachingRow?.report_json ?? null
@@ -438,6 +454,14 @@ export default async function DashboardPage() {
             </p>
           </div>
         )}
+
+        {/* Onboarding checklist — hidden when all steps complete */}
+        <OnboardingChecklist
+          hasMemories={   (memories?.length ?? 0) > 0}
+          hasVoiceSample={!!voiceSampleCheck}
+          hasCoaching={   !!coachingRow}
+          hasReflection={ !!everReflectedCheck}
+        />
 
         {/* Today's Focus */}
         <FocusCard initialItems={focusItems ?? []} />

@@ -8,6 +8,7 @@ import {
   type CommunicationProfile,
   type CommunicationInput,
 } from '@/lib/futureself/communication'
+import { trackEvent } from '@/lib/analytics'
 
 type Result<T> = { success: true; data: T } | { success: false; error: string }
 
@@ -132,6 +133,8 @@ export async function generateCommunicationAction(): Promise<Result<Communicatio
 
   revalidatePath('/communication')
   revalidatePath('/dashboard')
+
+  trackEvent('communication_profile_generated', { userId: user.id })
 
   return { success: true, data: profile }
 }

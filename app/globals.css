@@ -16,4 +16,40 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  /* Prevent rubber-band overscroll on mobile */
+  overscroll-behavior: none;
+}
+
+/* Remove tap flash on mobile */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevent double-tap zoom on interactive elements */
+button,
+a,
+[role="button"],
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+/* Momentum scrolling on iOS */
+.overflow-y-auto,
+.overflow-y-scroll {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Safe-area padding utilities */
+@utility pb-safe {
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+@utility mb-safe {
+  margin-bottom: env(safe-area-inset-bottom);
 }

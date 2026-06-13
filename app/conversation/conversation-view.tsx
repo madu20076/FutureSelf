@@ -483,7 +483,10 @@ export function ConversationView({
       </div>
 
       {/* ── Controls ── */}
-      <div className="flex-1 flex flex-col items-center justify-between px-6 py-5 overflow-y-auto">
+      <div
+        className="flex-1 flex flex-col items-center justify-between px-6 pt-5 overflow-y-auto"
+        style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}
+      >
         <div className="flex flex-col items-center gap-6 w-full max-w-sm">
 
           {/* Status indicator */}

@@ -9,11 +9,23 @@ export const dynamic = 'force-dynamic'
 // ── Types ────────────────────────────────────────────────────────────────────
 
 type Stats = {
-  totalUsers: number
-  totalProfiles: number
-  totalPublicProfiles: number
-  totalSessions: number
-  totalMessages: number
+  totalUsers:           number
+  totalProfiles:        number
+  totalPublicProfiles:  number
+  totalSessions:        number
+  totalMessages:        number
+  totalReflections:     number
+  totalCoachingReports: number
+  totalFeedback:        number
+}
+
+type FeedbackRow = {
+  id:        string
+  userEmail: string
+  rating:    number | null
+  category:  string | null
+  feedback:  string
+  createdAt: string
 }
 
 type RecentUser = {
@@ -95,15 +107,19 @@ export default async function AdminPage() {
   const hasServiceKey = Boolean(adminClient)
 
   const emptyStats: Stats = {
-    totalUsers: 0,
-    totalProfiles: 0,
-    totalPublicProfiles: 0,
-    totalSessions: 0,
-    totalMessages: 0,
+    totalUsers:           0,
+    totalProfiles:        0,
+    totalPublicProfiles:  0,
+    totalSessions:        0,
+    totalMessages:        0,
+    totalReflections:     0,
+    totalCoachingReports: 0,
+    totalFeedback:        0,
   }
-  let stats = emptyStats
-  let recentUsers: RecentUser[] = []
-  let recentChats: RecentChat[] = []
+  let stats        = emptyStats
+  let recentUsers:   RecentUser[]   = []
+  let recentChats:   RecentChat[]   = []
+  let recentFeedback: FeedbackRow[] = []
 
   if (adminClient) {
     // ── Parallel stat queries ──────────────────────────────────────────────
@@ -113,31 +129,29 @@ export default async function AdminPage() {
       publicProfilesRes,
       sessionsRes,
       messagesRes,
+      reflectionsRes,
+      coachingRes,
+      feedbackRes,
     ] = await Promise.all([
-      adminClient
-        .from('profiles')
-        .select('*', { count: 'exact', head: true }),
-      adminClient
-        .from('futureself_profiles')
-        .select('*', { count: 'exact', head: true }),
-      adminClient
-        .from('futureself_profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_public', true),
-      adminClient
-        .from('chat_sessions')
-        .select('*', { count: 'exact', head: true }),
-      adminClient
-        .from('chat_messages')
-        .select('*', { count: 'exact', head: true }),
+      adminClient.from('profiles').select('*', { count: 'exact', head: true }),
+      adminClient.from('futureself_profiles').select('*', { count: 'exact', head: true }),
+      adminClient.from('futureself_profiles').select('*', { count: 'exact', head: true }).eq('is_public', true),
+      adminClient.from('chat_sessions').select('*', { count: 'exact', head: true }),
+      adminClient.from('chat_messages').select('*', { count: 'exact', head: true }),
+      adminClient.from('futureself_memories').select('*', { count: 'exact', head: true }).eq('source', 'weekly_reflection'),
+      adminClient.from('futureself_coaching_reports').select('*', { count: 'exact', head: true }),
+      adminClient.from('futureself_feedback').select('*', { count: 'exact', head: true }),
     ])
 
     stats = {
-      totalUsers: usersRes.count ?? 0,
-      totalProfiles: profilesRes.count ?? 0,
-      totalPublicProfiles: publicProfilesRes.count ?? 0,
-      totalSessions: sessionsRes.count ?? 0,
-      totalMessages: messagesRes.count ?? 0,
+      totalUsers:           usersRes.count           ?? 0,
+      totalProfiles:        profilesRes.count         ?? 0,
+      totalPublicProfiles:  publicProfilesRes.count   ?? 0,
+      totalSessions:        sessionsRes.count          ?? 0,
+      totalMessages:        messagesRes.count          ?? 0,
+      totalReflections:     reflectionsRes.count       ?? 0,
+      totalCoachingReports: coachingRes.count          ?? 0,
+      totalFeedback:        feedbackRes.count          ?? 0,
     }
 
     // ── Recent users ───────────────────────────────────────────────────────
@@ -188,6 +202,33 @@ export default async function AdminPage() {
         lastMessageAt: c.last_message_at,
       }))
     }
+
+    // ── Recent Feedback ────────────────────────────────────────────────────
+    const { data: feedbackData } = await adminClient
+      .from('futureself_feedback')
+      .select('id, user_id, rating, category, feedback, created_at')
+      .order('created_at', { ascending: false })
+      .limit(10)
+
+    if (feedbackData && feedbackData.length > 0) {
+      const fbUserIds = [...new Set((feedbackData as Array<{ user_id: string | null }>).map(f => f.user_id).filter(Boolean))] as string[]
+      const { data: fbUsers } = fbUserIds.length > 0
+        ? await adminClient.from('profiles').select('id, email').in('id', fbUserIds)
+        : { data: [] }
+      const emailMap = Object.fromEntries((fbUsers ?? []).map((u: { id: string; email: string }) => [u.id, u.email]))
+
+      recentFeedback = (feedbackData as Array<{
+        id: string; user_id: string | null; rating: number | null
+        category: string | null; feedback: string; created_at: string
+      }>).map(f => ({
+        id:        f.id,
+        userEmail: f.user_id ? (emailMap[f.user_id] ?? f.user_id.slice(0, 8)) : 'anonymous',
+        rating:    f.rating,
+        category:  f.category,
+        feedback:  f.feedback,
+        createdAt: f.created_at,
+      }))
+    }
   }
 
   return (
@@ -231,7 +272,7 @@ export default async function AdminPage() {
         </div>
 
         {/* ── Stats grid ── */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-10">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4 mb-4">
           <StatCard
             label="Total Users"
             value={stats.totalUsers}
@@ -290,7 +331,38 @@ export default async function AdminPage() {
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* ── Beta stats ── */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-10">
+          <StatCard
+            label="Reflections"
+            value={stats.totalReflections}
+            icon={
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </svg>
+            }
+          />
+          <StatCard
+            label="Coaching Reports"
+            value={stats.totalCoachingReports}
+            icon={
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+              </svg>
+            }
+          />
+          <StatCard
+            label="Feedback"
+            value={stats.totalFeedback}
+            icon={
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+            }
+          />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           {/* ── Recent Users ── */}
           <div>
             <SectionHeading>Recent Users</SectionHeading>
@@ -402,6 +474,49 @@ export default async function AdminPage() {
                 </table>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* ── Recent Feedback ── */}
+        <div>
+          <SectionHeading>Recent Feedback</SectionHeading>
+          <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] overflow-hidden">
+            {recentFeedback.length === 0 ? (
+              <div className="px-5 py-8 text-center text-sm text-white/25">
+                {hasServiceKey ? 'No feedback yet.' : 'Service key required.'}
+              </div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/[0.06]">
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-white/30 uppercase tracking-wider">User</th>
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-white/30 uppercase tracking-wider">Rating</th>
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-white/30 uppercase tracking-wider">Category</th>
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-white/30 uppercase tracking-wider">Feedback</th>
+                    <th className="text-left px-5 py-3 text-xs font-semibold text-white/30 uppercase tracking-wider">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentFeedback.map((fb, i) => (
+                    <tr key={fb.id} className={`${i !== recentFeedback.length - 1 ? 'border-b border-white/[0.04]' : ''} hover:bg-white/[0.02] transition-colors`}>
+                      <td className="px-5 py-3.5 text-white/45 font-mono text-xs">{fb.userEmail}</td>
+                      <td className="px-5 py-3.5 text-amber-400 text-sm">{fb.rating ? '★'.repeat(fb.rating) : '—'}</td>
+                      <td className="px-5 py-3.5">
+                        {fb.category && (
+                          <span className="inline-flex rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-xs text-white/45">
+                            {fb.category}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3.5 text-white/55 max-w-[260px]">
+                        <span className="line-clamp-2 text-xs leading-relaxed">{truncate(fb.feedback, 80)}</span>
+                      </td>
+                      <td className="px-5 py-3.5 text-white/30 whitespace-nowrap text-xs">{fmt(fb.createdAt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       </main>

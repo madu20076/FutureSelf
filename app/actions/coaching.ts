@@ -5,6 +5,7 @@ import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { generateCoachingReport, type CoachingReport, type CoachingInput } from '@/lib/futureself/coaching'
 import { generateCommunicationAction } from './communication'
+import { trackEvent } from '@/lib/analytics'
 
 type Result<T> = { success: true; data: T } | { success: false; error: string }
 
@@ -91,6 +92,8 @@ export async function generateCoachingAction(): Promise<Result<CoachingReport>> 
 
   revalidatePath('/coaching')
   revalidatePath('/dashboard')
+
+  trackEvent('coaching_generated', { userId: user.id, score: report.momentumScore })
 
   // Regenerate communication profile after coaching — non-fatal
   try {

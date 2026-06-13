@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { generateCoachingAction } from './coaching'
+import { trackEvent } from '@/lib/analytics'
 
 type Answer = { content: string; memory_type: string }
 type Result = { success: boolean; error?: string }
@@ -51,6 +52,8 @@ export async function saveReflectionAnswers(answers: Answer[]): Promise<Result> 
   revalidatePath('/dashboard')
   revalidatePath('/memories')
   revalidatePath('/me')
+
+  trackEvent('reflection_completed', { userId: user.id, memoryCount: rows.length })
 
   // Regenerate coaching report after reflection — non-fatal if it fails
   try {
